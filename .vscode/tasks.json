@@ -1,0 +1,25 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "compile",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-std=c++11",
+        "-g", "-v",
+        "-framework", "GLUT",
+        "-framework", "OpenGL",
+        // TODO: Make into lib?
+        "tinyxml/tinystr.cpp", "tinyxml/tinyxml.cpp", "tinyxml/tinyxmlerror.cpp", "tinyxml/tinyxmlparser.cpp",
+        "main.cpp",
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
