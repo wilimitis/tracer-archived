@@ -50,15 +50,18 @@ HitInfo cast(Ray r, Node *n)
   return h;
 }
 
-Color24 render(Ray r)
+void render(int i, int j, Ray r)
 {
   HitInfo h = cast(r, &rootNode);
+  
+  renderImage.setZBufferPixel(i, j, h.z);
+
   Color24 c;
   int v = h.node ? 255 : 0;
   c.r = v;
   c.g = v;
   c.b = v;
-  return c;
+  renderImage.setRenderedPixel(i, j, c);
 }
 
 void BeginRender()
@@ -105,9 +108,7 @@ void BeginRender()
       Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
 
       Point3 rd = (sw - camera.pos).GetNormalized();
-      Ray d = Ray(camera.pos, rd);
-      Color24 c = render(d);
-      renderImage.setRenderedPixel(i, j, c);
+      render(i, j, Ray(camera.pos, rd));
     }
   }
 }

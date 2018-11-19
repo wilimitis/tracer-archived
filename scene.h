@@ -297,11 +297,14 @@ public:
 	void	IncrementNumRenderPixel(int n)	{ numRenderedPixels+=n; }
 	bool	IsRenderDone() const			{ return numRenderedPixels >= width*height; }
 
-	void setRenderedPixel(int x, int y, Color24 c)
+	void setRenderedPixel(int i, int j, Color24 c)
 	{
-		int i = y * width + x;
-		img[i] = c;
+		img[reduceCoords(i, j)] = c;
 		IncrementNumRenderPixel(1);
+	}
+
+	void setZBufferPixel(int i, int j, float z) {
+		zbuffer[reduceCoords(i, j)] = z;
 	}
 
 	void	ComputeZBufferImage()
@@ -332,6 +335,11 @@ public:
 	bool SaveZImage(const char *filename) const { return SavePNG(filename,zbufferImg,1); }
 
 private:
+	int reduceCoords(int i, int j)
+	{
+		return j * width + i;
+	}
+
 	bool SavePNG(const char *filename, uchar *data, int compCount) const
 	{
 		LodePNGColorType colortype;
