@@ -52,21 +52,48 @@ Color24 render(Ray r)
   return c;
 }
 
+void print(Point3 p, const char *name) {
+  std::cout << name << ": " << p.x << ", " << p.y << ", " << p.z << std::endl;
+}
+
 void BeginRender()
 {
   std::cout << "begin render" << std::endl;
   
-  for (int x = 0; x < camera.imgWidth; x++) {
-    for (int y = 0; y < camera.imgHeight; y++) {
-      // TODO: Account for FOV and aspect ratio.
+  for (int i = 0; i < camera.imgWidth; i++) {
+    for (int j = 0; j < camera.imgHeight; j++) {
+      // Useful reference.
       // https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays
-      float xw = 2 * float(x) / camera.imgWidth - 1;
-      float yw = 2 * float(y) / camera.imgHeight - 1;
-      Point3 pd = Point3(xw, yw, camera.dir.z);
-      pd.Normalize();
-      Ray r = Ray(camera.pos, pd);
-      Color24 c = render(r);
-      renderImage.setRenderedPixel(x, y, c);
+
+      // Construct the orthographic view volume.
+      // Shirley 7.2
+      float b = -1, f = -1, l = -1;
+      float t =  1, n =  1, r =  1;
+
+      // Construct a coordinate system (orthonormal frame).
+      // Shirley 7.2.1
+      Point3 w = Point3(camera.dir).GetNormalized() * -1;
+      Point3 u = camera.up.Cross(w).GetNormalized();
+      Point3 v = w.Cross(u);
+
+      // Compute screen coordinates in camera space.
+      // Shirley 10.2
+      Point3 sc = Point3(
+        l + (r - l) * ((i + 0.5) / camera.imgWidth),
+        // Corrected to invert y from [1, -1] to [-1, 1].
+        -b - (t - b) * ((j + 0.5) / camera.imgHeight),
+        -1
+      );
+
+      // Compute screen position in world space.
+      // Shirley 10.2
+      // NOTE: If camera position = 1 then this breaks because the sw.z will be 0, and thus
+      // the direction will not be pointing in the negative z direction.
+      Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
+
+      Ray d = Ray(camera.pos, sw);
+      Color24 c = render(d);
+      renderImage.setRenderedPixel(i, j, c);
     }
   }
 }

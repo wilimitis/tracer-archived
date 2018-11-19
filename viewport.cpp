@@ -421,7 +421,6 @@ void GlutMotion(int x, int y)
 //-------------------------------------------------------------------------------
 bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
-	// TODO: Save distance
 	Point3 oc = ray.p - Point3(0, 0, 0);
 	float b = oc % ray.dir;
 	float c = oc % oc - 1;
