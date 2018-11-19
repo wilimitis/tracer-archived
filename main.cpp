@@ -78,8 +78,11 @@ void BeginRender()
 
       // Compute screen coordinates in camera space.
       // Shirley 10.2
+      float ar = camera.imgWidth > camera.imgHeight
+        ? float(camera.imgWidth) / camera.imgHeight
+        : float(camera.imgHeight) / camera.imgWidth;
       Point3 sc = Point3(
-        l + (r - l) * ((i + 0.5) / camera.imgWidth),
+        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar,
         // Corrected to invert y from [1, -1] to [-1, 1].
         -b - (t - b) * ((j + 0.5) / camera.imgHeight),
         -1
