@@ -12,6 +12,11 @@ void print(Point3 p, const char *name) {
   std::cout << name << ": " << p.x << ", " << p.y << ", " << p.z << std::endl;
 }
 
+float dtor(float d) {
+  float pi = 3.141592653589793238462643383279502884197169;
+  return d * (pi / 180);
+}
+
 HitInfo cast(Ray r, Node *n)
 {
   Point3 po = Point3(r.p);
@@ -75,19 +80,23 @@ void BeginRender()
       Point3 w = Point3(camera.dir).GetNormalized() * -1;
       Point3 u = camera.up.Cross(w).GetNormalized();
       Point3 v = w.Cross(u);
-      
+
       // Compute for aspect ratio.
       // Shirley 7.5
       float ar = camera.imgWidth > camera.imgHeight
         ? float(camera.imgWidth) / camera.imgHeight
         : float(camera.imgHeight) / camera.imgWidth;
       
+      // Compute field of view.
+      // Shirley 7.5
+      float tf = tan(dtor(camera.fov / 2)) * abs(n);
+
       // Compute screen coordinates in camera space.
       // Shirley 10.2
       Point3 sc = Point3(
-        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar,
+        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar * tf,
         // Corrected to invert y from [1, -1] to [-1, 1].
-        -b - (t - b) * ((j + 0.5) / camera.imgHeight),
+        (-b - (t - b) * ((j + 0.5) / camera.imgHeight)) * tf,
         -1
       );
 
