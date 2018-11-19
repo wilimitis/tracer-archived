@@ -8,6 +8,10 @@ Camera camera;
 Node rootNode;
 RenderImage renderImage;
 
+void print(Point3 p, const char *name) {
+  std::cout << name << ": " << p.x << ", " << p.y << ", " << p.z << std::endl;
+}
+
 HitInfo cast(Ray r, Node *n)
 {
   Point3 po = Point3(r.p);
@@ -50,10 +54,6 @@ Color24 render(Ray r)
   c.g = v;
   c.b = v;
   return c;
-}
-
-void print(Point3 p, const char *name) {
-  std::cout << name << ": " << p.x << ", " << p.y << ", " << p.z << std::endl;
 }
 
 void BeginRender()
