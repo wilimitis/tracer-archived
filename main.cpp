@@ -98,8 +98,7 @@ void BeginRender()
       // Shirley 10.2
       Point3 sc = Point3(
         (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar * tf,
-        // Corrected to invert y from [1, -1] to [-1, 1].
-        (-b - (t - b) * ((j + 0.5) / camera.imgHeight)) * tf,
+        (b + (t - b) * ((j + 0.5) / camera.imgHeight)) * tf,
         -1
       );
 
