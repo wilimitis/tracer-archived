@@ -75,12 +75,15 @@ void BeginRender()
       Point3 w = Point3(camera.dir).GetNormalized() * -1;
       Point3 u = camera.up.Cross(w).GetNormalized();
       Point3 v = w.Cross(u);
-
-      // Compute screen coordinates in camera space.
-      // Shirley 10.2
+      
+      // Compute for aspect ratio.
+      // Shirley 7.5
       float ar = camera.imgWidth > camera.imgHeight
         ? float(camera.imgWidth) / camera.imgHeight
         : float(camera.imgHeight) / camera.imgWidth;
+      
+      // Compute screen coordinates in camera space.
+      // Shirley 10.2
       Point3 sc = Point3(
         (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar,
         // Corrected to invert y from [1, -1] to [-1, 1].
