@@ -90,11 +90,10 @@ void BeginRender()
 
       // Compute screen position in world space.
       // Shirley 10.2
-      // NOTE: If camera position = 1 then this breaks because the sw.z will be 0, and thus
-      // the direction will not be pointing in the negative z direction.
       Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
 
-      Ray d = Ray(camera.pos, sw);
+      Point3 rd = (sw - camera.pos).GetNormalized();
+      Ray d = Ray(camera.pos, rd);
       Color24 c = render(d);
       renderImage.setRenderedPixel(i, j, c);
     }
