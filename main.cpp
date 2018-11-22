@@ -17,9 +17,9 @@ float dtor(float d) {
   return d * (pi / 180);
 }
 
-HitInfo cast(Ray r, Node *n)
+HitInfo cast(Ray ro, Node *n)
 {
-  Point3 po = Point3(r.p);
+  Ray r = Ray(ro);
   HitInfo h = HitInfo();
   Object *o = n->GetNodeObj();
   if (o) {
@@ -35,7 +35,8 @@ HitInfo cast(Ray r, Node *n)
   for (int i = 0; i < n->GetNumChild(); i++) {
     HitInfo hc = cast(r, n->GetChild(i));
     if (hc.node && hc.z < h.z) {
-        h = hc;
+      h.z = hc.z;
+      h.node = n;
     }
 	}
 
@@ -45,7 +46,7 @@ HitInfo cast(Ray r, Node *n)
     // The intersection in parent space.
     i = h.node->TransformFrom(i);
     // Compute z in parent space.
-    h.z = (i - po).Length();
+    h.z = (i - ro.p).Length();
   }
   return h;
 }
