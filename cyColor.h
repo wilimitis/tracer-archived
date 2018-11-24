@@ -238,7 +238,7 @@ public:
 
 	//!@name Gray-scale functions
 	int           Sum () const { return int(r) + int(g) + int(b); }
-	unsigned char Gray() const { return unsigned char( (Sum()+1) / 3 ); }
+	unsigned char Gray() const { return unsigned (char( (Sum()+1) / 3 )); }
 
 	//!@name Limit functions
 	void Clamp   ( unsigned char limitMin=  0, unsigned char limitMax=255 ) { ClampMin(limitMin); ClampMax(limitMax); }
@@ -294,7 +294,7 @@ public:
 
 	//!@name Gray-scale functions
 	int           Sum () const { return int(r) + int(g) + int(b); }
-	unsigned char Gray() const { return unsigned char( (Sum()+1) / 3 ); }
+	unsigned char Gray() const { return unsigned (char( (Sum()+1) / 3 )); }
 
 	//!@name Limit functions
 	void Clamp   ( unsigned char limitMin=  0, unsigned char limitMax=255 ) { ClampMin(limitMin); ClampMax(limitMax); }

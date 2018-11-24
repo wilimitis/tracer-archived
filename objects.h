@@ -23,8 +23,6 @@ public:
 	virtual void ViewportDisplay(const Material *mtl) const;
 };
 
-extern Sphere theSphere;
-
 //-------------------------------------------------------------------------------
 
 #endif

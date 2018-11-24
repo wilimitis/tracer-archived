@@ -455,6 +455,14 @@ void Sphere::ViewportDisplay(const Material *mtl) const
 	}
 	gluSphere(q,1,50,50);
 }
+
+Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights) const
+{
+	Color c = Color();
+	c.SetWhite();
+	return c;
+}
+
 void MtlBlinn::SetViewportMaterial(int subMtlID) const
 {
 	ColorA c;
@@ -464,6 +472,7 @@ void MtlBlinn::SetViewportMaterial(int subMtlID) const
 	glMaterialfv( GL_FRONT, GL_SPECULAR, &c.r );
 	glMaterialf( GL_FRONT, GL_SHININESS, glossiness*1.5f );
 }
+
 void GenLight::SetViewportParam(int lightID, ColorA ambient, ColorA intensity, Point4 pos ) const
 {
 	glEnable ( GL_LIGHT0 + lightID );

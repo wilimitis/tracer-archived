@@ -5,6 +5,8 @@
 #include "xmlload.cpp"
 
 Camera camera;
+LightList lights;
+MaterialList materials;
 Node rootNode;
 RenderImage renderImage;
 
