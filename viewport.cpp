@@ -279,13 +279,15 @@ void GlutDisplay()
 		DrawScene();
 		break;
 	case VIEWMODE_IMAGE:
-		DrawImage( renderImage.GetPixels(), GL_UNSIGNED_BYTE, GL_RGB );
+		//DrawImage( renderImage.GetPixels(), GL_UNSIGNED_BYTE, GL_RGB );
+		glDrawPixels( renderImage.GetWidth(), renderImage.GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, renderImage.GetPixels() );
 		DrawRenderProgressBar();
 		break;
 	case VIEWMODE_Z:
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 		if ( ! renderImage.GetZBufferImage() ) renderImage.ComputeZBufferImage();
-		DrawImage( renderImage.GetZBufferImage(), GL_UNSIGNED_BYTE, GL_LUMINANCE );
+		//DrawImage( renderImage.GetZBufferImage(), GL_UNSIGNED_BYTE, GL_LUMINANCE );
+		glDrawPixels( renderImage.GetWidth(), renderImage.GetHeight(), GL_LUMINANCE, GL_UNSIGNED_BYTE, renderImage.GetZBufferImage() );
 		break;
 	}
 
