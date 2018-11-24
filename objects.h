@@ -2,8 +2,8 @@
 ///
 /// \file       objects.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    1.0
-/// \date       August 26, 2013
+/// \version    2.0
+/// \date       September 3, 2015
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -20,8 +20,10 @@ class Sphere : public Object
 {
 public:
 	virtual bool IntersectRay( const Ray &ray, HitInfo &hInfo, int hitSide=HIT_FRONT ) const;
-	virtual void ViewportDisplay() const;
+	virtual void ViewportDisplay(const Material *mtl) const;
 };
+
+extern Sphere theSphere;
 
 //-------------------------------------------------------------------------------
 

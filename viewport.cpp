@@ -2,7 +2,7 @@
 ///
 /// \file       viewport.cpp 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    1.2
+/// \version    2.0
 /// \date       August 28, 2017
 ///
 /// \brief Example source for CS 6620 - University of Utah.
@@ -15,12 +15,14 @@
 
 #include "scene.h"
 #include "objects.h"
+#include "lights.h"
+#include "materials.h"
 #include <stdlib.h>
 #include <time.h>
 
 #ifdef USE_GLUT
 # ifdef __APPLE__
-#include <GLUT/glut.h>
+#  include <GLUT/glut.h>
 # else
 #  include <GL/glut.h>
 # endif
@@ -36,6 +38,7 @@ void StopRender();	// Called to end rendering (if it is not already finished)
 extern Node rootNode;
 extern Camera camera;
 extern RenderImage renderImage;
+extern LightList lights;
 
 //-------------------------------------------------------------------------------
 
@@ -103,15 +106,8 @@ void ShowViewport()
 	glPointSize(3.0);
 	glEnable( GL_CULL_FACE );
 
-	#define LIGHTAMBIENT 0.1f
-	glEnable( GL_LIGHT0 );
-	float lightamb[4] =  { LIGHTAMBIENT, LIGHTAMBIENT, LIGHTAMBIENT, 1.0f };
-	glLightfv( GL_LIGHT0, GL_AMBIENT, lightamb );
-
-	#define LIGHTDIF0 1.0f
-	float lightdif0[4] = { LIGHTDIF0, LIGHTDIF0, LIGHTDIF0, 1.0f };
-	glLightfv( GL_LIGHT0, GL_DIFFUSE, lightdif0 );
-	glLightfv( GL_LIGHT0, GL_SPECULAR, lightdif0 );
+	float zero[] = {0,0,0,0};
+	glLightModelfv( GL_LIGHT_MODEL_AMBIENT, zero );
 
 	glEnable(GL_NORMALIZE);
 
@@ -150,13 +146,16 @@ void DrawNode( Node *node )
 {
 	glPushMatrix();
 
+	const Material *mtl = node->GetMaterial();
+	if ( mtl ) mtl->SetViewportMaterial();
+
 	Matrix3 tm = node->GetTransform();
 	Point3 p = node->GetPosition();
 	float m[16] = { tm[0],tm[1],tm[2],0, tm[3],tm[4],tm[5],0, tm[6],tm[7],tm[8],0, p.x,p.y,p.z,1 };
 	glMultMatrixf( m );
 
 	Object *obj = node->GetNodeObj();
-	if ( obj ) obj->ViewportDisplay();
+	if ( obj ) obj->ViewportDisplay(mtl);
 
 	for ( int i=0; i<node->GetNumChild(); i++ ) {
 		DrawNode( node->GetChild(i) );
@@ -183,33 +182,27 @@ void DrawScene()
 	glRotatef( viewAngle1, 1, 0, 0 );
 	glRotatef( viewAngle2, 0, 0, 1 );
 
+	if ( lights.size() > 0 ) {
+		for ( unsigned int i=0; i<lights.size(); i++ ) {
+			lights[i]->SetViewportLight(i);
+		}
+	} else {
+		float white[] = {1,1,1,1};
+		float black[] = {0,0,0,0};
+		Point4 p(camera.pos, 1);
+		glEnable ( GL_LIGHT0 );
+		glLightfv( GL_LIGHT0, GL_AMBIENT,  black );
+		glLightfv( GL_LIGHT0, GL_DIFFUSE,  white );
+		glLightfv( GL_LIGHT0, GL_SPECULAR, white );
+		glLightfv( GL_LIGHT0, GL_POSITION, &p.x );
+	}
+
 	DrawNode(&rootNode);
 
 	glPopMatrix();
 
 	glDisable( GL_DEPTH_TEST );
 	glDisable( GL_LIGHTING );
-}
-
-//-------------------------------------------------------------------------------
-
-void DrawProgressBar(float done)
-{
-	glMatrixMode( GL_PROJECTION );
-	glPushMatrix();
-	glLoadIdentity();
-
-	glBegin(GL_LINES);
-	glColor3f(1,1,1);
-	glVertex2f(-1,-1);
-	glVertex2f(done*2-1,-1);
-	glColor3f(0,0,0);
-	glVertex2f(done*2-1,-1);
-	glVertex2f(1,-1);
-	glEnd();
-
-	glPopMatrix();
-	glMatrixMode( GL_MODELVIEW );
 }
 
 //-------------------------------------------------------------------------------
@@ -247,6 +240,27 @@ void DrawImage( void *data, GLenum type, GLenum format )
 
 //-------------------------------------------------------------------------------
 
+void DrawProgressBar(float done)
+{
+	glMatrixMode( GL_PROJECTION );
+	glPushMatrix();
+	glLoadIdentity();
+
+	glBegin(GL_LINES);
+	glColor3f(1,1,1);
+	glVertex2f(-1,-1);
+	glVertex2f(done*2-1,-1);
+	glColor3f(0,0,0);
+	glVertex2f(done*2-1,-1);
+	glVertex2f(1,-1);
+	glEnd();
+
+	glPopMatrix();
+	glMatrixMode( GL_MODELVIEW );
+}
+
+//-------------------------------------------------------------------------------
+
 void DrawRenderProgressBar()
 {
 	int rp = renderImage.GetNumRenderedPixels();
@@ -265,16 +279,13 @@ void GlutDisplay()
 		DrawScene();
 		break;
 	case VIEWMODE_IMAGE:
-		//glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
-		glDrawPixels( renderImage.GetWidth(), renderImage.GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, renderImage.GetPixels() );
-		//DrawImage( renderImage.GetPixels(), GL_UNSIGNED_BYTE, GL_RGB );
+		DrawImage( renderImage.GetPixels(), GL_UNSIGNED_BYTE, GL_RGB );
 		DrawRenderProgressBar();
 		break;
 	case VIEWMODE_Z:
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 		if ( ! renderImage.GetZBufferImage() ) renderImage.ComputeZBufferImage();
-		glDrawPixels( renderImage.GetWidth(), renderImage.GetHeight(), GL_LUMINANCE, GL_UNSIGNED_BYTE, renderImage.GetZBufferImage() );
-		//DrawImage( renderImage.GetZBufferImage(), GL_UNSIGNED_BYTE, GL_LUMINANCE );
+		DrawImage( renderImage.GetZBufferImage(), GL_UNSIGNED_BYTE, GL_LUMINANCE );
 		break;
 	}
 
@@ -436,13 +447,30 @@ bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 	return false;
 }
 
-void Sphere::ViewportDisplay() const
+void Sphere::ViewportDisplay(const Material *mtl) const
 {
 	static GLUquadric *q = NULL;
 	if ( q == NULL ) {
 		q = gluNewQuadric();
 	}
 	gluSphere(q,1,50,50);
+}
+void MtlBlinn::SetViewportMaterial(int subMtlID) const
+{
+	ColorA c;
+	c = ColorA(diffuse);
+	glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, &c.r );
+	c = ColorA(specular);
+	glMaterialfv( GL_FRONT, GL_SPECULAR, &c.r );
+	glMaterialf( GL_FRONT, GL_SHININESS, glossiness*1.5f );
+}
+void GenLight::SetViewportParam(int lightID, ColorA ambient, ColorA intensity, Point4 pos ) const
+{
+	glEnable ( GL_LIGHT0 + lightID );
+	glLightfv( GL_LIGHT0 + lightID, GL_AMBIENT,  &ambient.r );
+	glLightfv( GL_LIGHT0 + lightID, GL_DIFFUSE,  &intensity.r );
+	glLightfv( GL_LIGHT0 + lightID, GL_SPECULAR, &intensity.r );
+	glLightfv( GL_LIGHT0 + lightID, GL_POSITION, &pos.x );
 }
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------

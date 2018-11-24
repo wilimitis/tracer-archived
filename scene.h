@@ -2,8 +2,8 @@
 ///
 /// \file       scene.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    1.2
-/// \date       August 29, 2017
+/// \version    2.2
+/// \date       August 30, 2017
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -31,9 +31,12 @@ typedef cyPoint4f Point4;
 #include "cyMatrix.h"
 typedef cyMatrix3f Matrix3;
 
-typedef unsigned char uchar;
+#include "cyColor.h"
+typedef cyColor Color;
+typedef cyColorA ColorA;
+typedef cyColor24 Color24;
 
-struct Color24 { uchar r, g, b; };
+typedef unsigned char uchar;
 
 //-------------------------------------------------------------------------------
 
@@ -72,6 +75,8 @@ class Node;
 struct HitInfo
 {
 	float z;			// the distance from the ray center to the hit point
+	Point3 p;			// position of the hit point
+	Point3 N;			// surface normal at the hit point
 	const Node *node;	// the object node that was hit
 	bool front;			// true if the ray hits the front side, false if the ray hits the back side
 
@@ -179,15 +184,49 @@ private:
 
 //-------------------------------------------------------------------------------
 
+class Material;
+
 // Base class for all object types
 class Object
 {
 public:
 	virtual bool IntersectRay( const Ray &ray, HitInfo &hInfo, int hitSide=HIT_FRONT ) const=0;
-	virtual void ViewportDisplay() const {}	// used for OpenGL display
+	virtual void ViewportDisplay(const Material *mtl) const {}	// used for OpenGL display
 };
 
 typedef ItemFileList<Object> ObjFileList;
+
+//-------------------------------------------------------------------------------
+
+class Light : public ItemBase
+{
+public:
+	virtual Color	Illuminate(const Point3 &p, const Point3 &N) const=0;
+	virtual Point3	Direction (const Point3 &p) const=0;
+	virtual bool	IsAmbient () const { return false; }
+	virtual void	SetViewportLight(int lightID) const {}	// used for OpenGL display
+};
+
+class LightList : public ItemList<Light> {};
+
+//-------------------------------------------------------------------------------
+
+class Material : public ItemBase
+{
+public:
+	// The main method that handles the shading by calling all the lights in the list.
+	// ray: incoming ray,
+	// hInfo: hit information for the point that is being shaded, lights: the light list,
+	virtual Color Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights) const=0;
+
+	virtual void SetViewportMaterial(int subMtlID=0) const {}	// used for OpenGL display
+};
+
+class MaterialList : public ItemList<Material>
+{
+public:
+	Material* Find( const char *name ) { int n=size(); for ( int i=0; i<n; i++ ) if ( at(i) && strcmp(name,at(i)->GetName())==0 ) return at(i); return NULL; }
+};
 
 //-------------------------------------------------------------------------------
 
@@ -197,11 +236,12 @@ private:
 	Node **child;				// Child nodes
 	int numChild;				// The number of child nodes
 	Object *obj;				// Object reference (merely points to the object, but does not own the object, so it doesn't get deleted automatically)
+	Material *mtl;				// Material used for shading the object
 public:
-	Node() : child(NULL), numChild(0), obj(NULL) {}
+	Node() : child(NULL), numChild(0), obj(NULL), mtl(NULL) {}
 	virtual ~Node() { DeleteAllChildNodes(); }
 
-	void Init() { DeleteAllChildNodes(); obj=NULL; SetName(NULL); InitTransform(); } // Initialize the node deleting all child nodes
+	void Init() { DeleteAllChildNodes(); obj=NULL; mtl=NULL; SetName(NULL); InitTransform(); } // Initialize the node deleting all child nodes
 
 	// Hierarchy management
 	int	 GetNumChild() const { return numChild; }
@@ -231,6 +271,10 @@ public:
 	Object*			GetNodeObj() { return obj; }
 	void			SetNodeObj(Object *object) { obj=object; }
 
+	// Material management
+	const Material* GetMaterial() const { return mtl; }
+	void			SetMaterial(Material *material) { mtl=material; }
+
 	// Transformations
 	Ray ToNodeCoords( const Ray &ray ) const
 	{
@@ -238,6 +282,11 @@ public:
 		r.p   = TransformTo(ray.p);
 		r.dir = TransformTo(ray.p + ray.dir) - r.p;
 		return r;
+	}
+	void FromNodeCoords( HitInfo &hInfo ) const
+	{
+		hInfo.p = TransformFrom(hInfo.p);
+		hInfo.N = VectorTransformFrom(hInfo.N).GetNormalized();
 	}
 };
 
