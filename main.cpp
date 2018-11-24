@@ -19,13 +19,15 @@ float dtor(float d) {
 
 HitInfo cast(Ray ro, Node *n)
 {
+  // Compute the ray in parent space.
   Ray r = Ray(ro);
+  r = n->ToNodeCoords(r);
+  // Renormalize since scaling may denormalize the direction.
+  r.Normalize();
+
   HitInfo h = HitInfo();
   Object *o = n->GetNodeObj();
   if (o) {
-    r = n->ToNodeCoords(r);
-    // Renormalize since scaling may denormalize the direction.
-    r.Normalize();
     if (o->IntersectRay(r, h)) {
       // h.z is set in IntersectRay.
       h.node = n;
@@ -34,18 +36,17 @@ HitInfo cast(Ray ro, Node *n)
 
   for (int i = 0; i < n->GetNumChild(); i++) {
     HitInfo hc = cast(r, n->GetChild(i));
-    if (hc.node && hc.z < h.z) {
-      h.z = hc.z;
-      h.node = n;
+    if (hc.z < h.z) {
+      h = hc;
     }
 	}
 
-  if (o && h.node) {
+  if (h.node) {
     // The intersection in object space.
     Point3 i = r.p + r.dir * h.z;
     // The intersection in parent space.
-    i = h.node->TransformFrom(i);
-    // Compute z in parent space.
+    i = n->TransformFrom(i);
+    // Compute the distance in parent space.
     h.z = (i - ro.p).Length();
   }
   return h;
