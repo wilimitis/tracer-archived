@@ -23,6 +23,8 @@ public:
 	virtual void ViewportDisplay(const Material *mtl) const;
 };
 
+class ObjectList : public ItemList<Object> {};
+
 //-------------------------------------------------------------------------------
 
 #endif

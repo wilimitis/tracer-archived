@@ -7,6 +7,7 @@
 Camera camera;
 LightList lights;
 MaterialList materials;
+ObjectList objects;
 Node rootNode;
 RenderImage renderImage;
 

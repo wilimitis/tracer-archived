@@ -22,6 +22,7 @@ extern Camera camera;
 extern RenderImage renderImage;
 extern MaterialList materials;
 extern LightList lights;
+extern ObjectList objects;
 
 //-------------------------------------------------------------------------------
 
@@ -167,7 +168,9 @@ void LoadNode(Node *parent, TiXmlElement *element, int level)
 	const char* type = element->Attribute("type");
 	if ( type ) {
 		if ( COMPARE(type,"sphere") ) {
-			node->SetNodeObj(new Sphere());
+			Sphere* s = new Sphere;
+			objects.push_back(s);
+			node->SetNodeObj(s);
 			printf(" - Sphere");
 		} else {
 			printf(" - UNKNOWN TYPE");
