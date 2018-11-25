@@ -190,6 +190,7 @@ class Material;
 class Object
 {
 public:
+	virtual ~Object() {}
 	virtual bool IntersectRay( const Ray &ray, HitInfo &hInfo, int hitSide=HIT_FRONT ) const=0;
 	virtual void ViewportDisplay(const Material *mtl) const {}	// used for OpenGL display
 };
