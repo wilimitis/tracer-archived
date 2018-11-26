@@ -1,3 +1,8 @@
+/**
+ * TODO
+ * - Use valgrind to inspect for memory leaks.
+ */
+
 #define USE_GLUT
 
 #include <iostream>
@@ -45,14 +50,30 @@ HitInfo cast(Ray ro, Node *n)
 	}
 
   if (h.node) {
-    // The intersection in object space.
-    Point3 i = r.p + r.dir * h.z;
-    // The intersection in parent space.
-    i = n->TransformFrom(i);
+    // Compute the intersection and normal in parent space.
+    n->FromNodeCoords(h);
     // Compute the distance in parent space.
-    h.z = (i - ro.p).Length();
+    h.z = (h.p - ro.p).Length();
   }
   return h;
+}
+
+float map(float input, float inputStart, float inputEnd, float outputStart, float outputEnd)
+{
+  float inputRange = inputEnd - inputStart;
+  float outputRange = outputEnd - outputStart;
+
+  return (input - inputStart) * outputRange / inputRange + outputStart;
+}
+
+Color24 getNormalMapColor(Point3 n)
+{
+  // https://en.wikipedia.org/wiki/Normal_mapping
+  return Color24(
+    map(n.x, -1, 1, 0, 255),
+    map(n.y, -1, 1, 0, 255),
+    map(n.z, 0, 1, 128, 255)
+  );
 }
 
 void render(int i, int j, Ray r)
@@ -60,12 +81,14 @@ void render(int i, int j, Ray r)
   HitInfo h = cast(r, &rootNode);
   
   renderImage.setZBufferPixel(i, j, h.z);
-
+  
   Color24 c;
-  int v = h.node ? 255 : 0;
-  c.r = v;
-  c.g = v;
-  c.b = v;
+  if (h.node) {
+    c = getNormalMapColor(h.N);
+  } else {
+    c.SetBlack();
+  }
+  
   renderImage.setRenderedPixel(i, j, c);
 }
 
