@@ -66,7 +66,7 @@ float map(float input, float inputStart, float inputEnd, float outputStart, floa
   return (input - inputStart) * outputRange / inputRange + outputStart;
 }
 
-Color24 getNormalMapColor(Point3 n)
+Color24 normalMap(Point3 n)
 {
   // https://en.wikipedia.org/wiki/Normal_mapping
   return Color24(
@@ -76,19 +76,23 @@ Color24 getNormalMapColor(Point3 n)
   );
 }
 
+Color24 shade(Ray &r, HitInfo &h)
+{
+  if (!h.node) {
+    return Color24::Black();
+  }
+  // return normalMap(h.N);
+  return Color24(h.node->GetMaterial()->Shade(r, h, lights));
+}
+
 void render(int i, int j, Ray r)
 {
   HitInfo h = cast(r, &rootNode);
   
   renderImage.setZBufferPixel(i, j, h.z);
   
-  Color24 c;
-  if (h.node) {
-    c = getNormalMapColor(h.N);
-  } else {
-    c.SetBlack();
-  }
-  
+  Color24 c = shade(r, h);
+
   renderImage.setRenderedPixel(i, j, c);
 }
 

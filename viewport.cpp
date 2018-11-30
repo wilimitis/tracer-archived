@@ -463,8 +463,29 @@ void Sphere::ViewportDisplay(const Material *mtl) const
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights) const
 {
-	Color c = Color();
-	c.SetWhite();
+  Color c = Color::Black();
+  for (int i = 0; i < lights.size(); i++) {
+    Light *light = lights[i];
+		Color lc = Color::White();
+		Color li = light->Illuminate(hInfo.p, hInfo.N);
+    if (!light->IsAmbient()) {
+      float s = 0;
+      Point3 l = light->Direction(hInfo.p).GetNormalized() * -1;
+			float lambertian = max(l % hInfo.N, 0);
+      if (lambertian > 0) {
+        // Blinn-Phong
+        // https://en.wikipedia.org/wiki/Blinn–Phong_shading_model
+        Point3 v = (ray.p - hInfo.p).GetNormalized();
+        Point3 h = (l + v).GetNormalized();
+        float sa = max(h % hInfo.N, 0);
+        s = powf(sa, glossiness);
+				c += specular * s * lc * li;
+      }
+			c += diffuse * lambertian * lc * li;
+    } else {
+			c +=  lc * li;
+		}
+	}
 	return c;
 }
 
