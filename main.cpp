@@ -82,7 +82,7 @@ Color24 shade(Ray &r, HitInfo &h)
     return Color24::Black();
   }
   // return normalMap(h.N);
-  return Color24(h.node->GetMaterial()->Shade(r, h, lights));
+  return Color24(h.node->GetMaterial()->Shade(r, h, lights, 1));
 }
 
 void render(int i, int j, Ray r)

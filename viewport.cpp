@@ -461,7 +461,7 @@ void Sphere::ViewportDisplay(const Material *mtl) const
 	gluSphere(q,1,50,50);
 }
 
-Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights) const
+Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
   Color c = Color::Black();
   for (int i = 0; i < lights.size(); i++) {

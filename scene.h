@@ -2,8 +2,8 @@
 ///
 /// \file       scene.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    2.2
-/// \date       August 30, 2017
+/// \version    4.0
+/// \date       September 1, 2017
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -218,7 +218,7 @@ public:
 	// The main method that handles the shading by calling all the lights in the list.
 	// ray: incoming ray,
 	// hInfo: hit information for the point that is being shaded, lights: the light list,
-	virtual Color Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights) const=0;
+	virtual Color Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const=0;
 
 	virtual void SetViewportMaterial(int subMtlID=0) const {}	// used for OpenGL display
 };
