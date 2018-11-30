@@ -47,7 +47,7 @@ HitInfo cast(Ray ro, Node *n)
     if (hc.z < h.z) {
       h = hc;
     }
-	}
+  }
 
   if (h.node) {
     // Compute the intersection and normal in parent space.
