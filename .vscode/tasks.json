@@ -8,13 +8,14 @@
       "type": "shell",
       "command": "g++",
       "args": [
+        "-o", "build/tracer",
         "-std=c++11",
         "-g", "-v",
         "-framework", "GLUT",
         "-framework", "OpenGL",
         // TODO: Make into lib?
         "tinyxml/tinystr.cpp", "tinyxml/tinyxml.cpp", "tinyxml/tinyxmlerror.cpp", "tinyxml/tinyxmlparser.cpp",
-        "main.cpp",
+        "main.cpp"
       ],
       "group": {
         "kind": "build",
