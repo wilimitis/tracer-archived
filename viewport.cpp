@@ -494,17 +494,24 @@ HitInfo cast(Ray ro, Node *n = &rootNode)
   return h;
 }
 
+Point3 reflect(Point3 d, Point3 n)
+{
+	return d - 2 * n * (d % n);
+}
+
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
+	Color black = Color::Black();
+	int bounceMax = 1;
+	float t = 0.0001;
+
   Color c = Color::Black();
-	int b = 1;
-	if (!hInfo.node || bounceCount == b) {
+	if (!hInfo.node) {
     return c;
   }
 
   for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
-		Color lc = Color::White();
 		Color li = light->Illuminate(hInfo.p, hInfo.N);
     if (!light->IsAmbient()) {
       float s = 0;
@@ -516,21 +523,29 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
         Point3 v = (ray.p - hInfo.p).GetNormalized();
         Point3 h = (l + v).GetNormalized();
         float sa = max(h % hInfo.N, 0);
-        s = powf(sa, glossiness);
-				c += specular * s * lc * li;
+        s = powf(sa, glossiness * 2);
+				c += specular * s * li;
       }
-			c += diffuse * lambertian * lc * li;
+			c += diffuse * lambertian * li;
     } else {
-			c +=  lc * li;
+			c +=  diffuse * li;
 		}
 	}
 
-	// Shirley 10.6
-  float e = 0.00001;
-  Point3 rd = ray.dir - 2 * hInfo.N * (ray.dir % hInfo.N);
-  Ray rn = Ray(hInfo.p + e * rd, rd);
-  HitInfo hn = cast(rn);
-	return c + Shade(rn, hn, lights, bounceCount + 1);
+	if (reflection != black) {
+		// Shirley 10.6
+		Point3 r = reflect(ray.dir, hInfo.N);
+		Ray rn = Ray(hInfo.p + t * r, r);
+		HitInfo hn = cast(rn);
+		if (hn.node && bounceCount != bounceMax) {
+			// c *= (Color::White() - reflection);
+			c += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
+		}
+	} else if (refraction != black) {
+		// Shirley 10.7
+	}
+
+	return c;
 }
 
 void MtlBlinn::SetViewportMaterial(int subMtlID) const
