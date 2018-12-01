@@ -461,9 +461,47 @@ void Sphere::ViewportDisplay(const Material *mtl) const
 	gluSphere(q,1,50,50);
 }
 
+HitInfo cast(Ray ro, Node *n = &rootNode)
+{
+  // Compute the ray in parent space.
+  Ray r = Ray(ro);
+  r = n->ToNodeCoords(r);
+  // Renormalize since scaling may denormalize the direction.
+  r.Normalize();
+
+  HitInfo h = HitInfo();
+  Object *o = n->GetNodeObj();
+  if (o) {
+    if (o->IntersectRay(r, h)) {
+      // h.z is set in IntersectRay.
+      h.node = n;
+    }
+  }
+
+  for (int i = 0; i < n->GetNumChild(); i++) {
+    HitInfo hc = cast(r, n->GetChild(i));
+    if (hc.z < h.z) {
+      h = hc;
+    }
+  }
+
+  if (h.node) {
+    // Compute the intersection and normal in parent space.
+    n->FromNodeCoords(h);
+    // Compute the distance in parent space.
+    h.z = (h.p - ro.p).Length();
+  }
+  return h;
+}
+
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
   Color c = Color::Black();
+	int b = 1;
+	if (!hInfo.node || bounceCount == b) {
+    return c;
+  }
+
   for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
 		Color lc = Color::White();
@@ -486,7 +524,13 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			c +=  lc * li;
 		}
 	}
-	return c;
+
+	// Shirley 10.6
+  float e = 0.00001;
+  Point3 rd = ray.dir - 2 * hInfo.N * (ray.dir % hInfo.N);
+  Ray rn = Ray(hInfo.p + e * rd, rd);
+  HitInfo hn = cast(rn);
+	return c + Shade(rn, hn, lights, bounceCount + 1);
 }
 
 void MtlBlinn::SetViewportMaterial(int subMtlID) const

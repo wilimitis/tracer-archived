@@ -25,39 +25,6 @@ float dtor(float d) {
   return d * (pi / 180);
 }
 
-HitInfo cast(Ray ro, Node *n = &rootNode)
-{
-  // Compute the ray in parent space.
-  Ray r = Ray(ro);
-  r = n->ToNodeCoords(r);
-  // Renormalize since scaling may denormalize the direction.
-  r.Normalize();
-
-  HitInfo h = HitInfo();
-  Object *o = n->GetNodeObj();
-  if (o) {
-    if (o->IntersectRay(r, h)) {
-      // h.z is set in IntersectRay.
-      h.node = n;
-    }
-  }
-
-  for (int i = 0; i < n->GetNumChild(); i++) {
-    HitInfo hc = cast(r, n->GetChild(i));
-    if (hc.z < h.z) {
-      h = hc;
-    }
-  }
-
-  if (h.node) {
-    // Compute the intersection and normal in parent space.
-    n->FromNodeCoords(h);
-    // Compute the distance in parent space.
-    h.z = (h.p - ro.p).Length();
-  }
-  return h;
-}
-
 float map(float input, float inputStart, float inputEnd, float outputStart, float outputEnd)
 {
   float inputRange = inputEnd - inputStart;
@@ -79,21 +46,13 @@ Color24 normalMap(HitInfo &h)
   );
 }
 
-Color shade(Ray &r, HitInfo &h, int b)
+Color shade(Ray &r, HitInfo &h)
 {
   Color c = Color::Black();
-  if (!h.node || b == 0) {
+  if (!h.node) {
     return c;
   }
-  c += h.node->GetMaterial()->Shade(r, h, lights, b);
-
-  // Shirley 10.6
-  float e = 0.00001;
-  Point3 rd = r.dir - 2 * h.N * (r.dir % h.N);
-  Ray rn = Ray(h.p + e * rd, rd);
-  HitInfo hn = cast(rn);
-  c += shade(rn, hn, b - 1);
-  return c;
+  return h.node->GetMaterial()->Shade(r, h, lights, 0);
 }
 
 void render(int i, int j, Ray r)
@@ -103,7 +62,7 @@ void render(int i, int j, Ray r)
   renderImage.setZBufferPixel(i, j, h.z);
   
   int b = 2;
-  Color24 c = Color24(shade(r, h, b));
+  Color24 c = Color24(shade(r, h));
   // Color24 c = normalMap(h);
 
   renderImage.setRenderedPixel(i, j, c);
