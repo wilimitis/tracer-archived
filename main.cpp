@@ -25,7 +25,7 @@ float dtor(float d) {
   return d * (pi / 180);
 }
 
-HitInfo cast(Ray ro, Node *n)
+HitInfo cast(Ray ro, Node *n = &rootNode)
 {
   // Compute the ray in parent space.
   Ray r = Ray(ro);
@@ -66,32 +66,45 @@ float map(float input, float inputStart, float inputEnd, float outputStart, floa
   return (input - inputStart) * outputRange / inputRange + outputStart;
 }
 
-Color24 normalMap(Point3 n)
-{
-  // https://en.wikipedia.org/wiki/Normal_mapping
-  return Color24(
-    map(n.x, -1, 1, 0, 255),
-    map(n.y, -1, 1, 0, 255),
-    map(n.z, 0, 1, 128, 255)
-  );
-}
-
-Color24 shade(Ray &r, HitInfo &h)
+Color24 normalMap(HitInfo &h)
 {
   if (!h.node) {
     return Color24::Black();
   }
-  // return normalMap(h.N);
-  return Color24(h.node->GetMaterial()->Shade(r, h, lights, 1));
+  // https://en.wikipedia.org/wiki/Normal_mapping
+  return Color24(
+    map(h.N.x, -1, 1, 0, 255),
+    map(h.N.y, -1, 1, 0, 255),
+    map(h.N.z, 0, 1, 128, 255)
+  );
+}
+
+Color shade(Ray &r, HitInfo &h, int b)
+{
+  Color c = Color::Black();
+  if (!h.node || b == 0) {
+    return c;
+  }
+  c += h.node->GetMaterial()->Shade(r, h, lights, b);
+
+  // Shirley 10.6
+  float e = 0.00001;
+  Point3 rd = r.dir - 2 * h.N * (r.dir % h.N);
+  Ray rn = Ray(h.p + e * rd, rd);
+  HitInfo hn = cast(rn);
+  c += shade(rn, hn, b - 1);
+  return c;
 }
 
 void render(int i, int j, Ray r)
 {
-  HitInfo h = cast(r, &rootNode);
+  HitInfo h = cast(r);
   
   renderImage.setZBufferPixel(i, j, h.z);
   
-  Color24 c = shade(r, h);
+  int b = 2;
+  Color24 c = Color24(shade(r, h, b));
+  // Color24 c = normalMap(h);
 
   renderImage.setRenderedPixel(i, j, c);
 }
