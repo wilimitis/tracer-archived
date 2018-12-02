@@ -505,6 +505,10 @@ HitInfo cast(Ray ro, Node *n = &rootNode)
 
 Point3 reflect(Point3 d, Point3 n)
 {
+	// Shirley 10.6
+	// Construction of Shirley 9.7
+	// Assume normalized vectors l and n.
+	// vproj(l, n) = sproj(l, n)n = (|l|cos(t))n = cos(t)n
 	return d - 2 * n * (d % n);
 }
 
