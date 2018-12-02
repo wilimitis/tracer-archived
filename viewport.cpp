@@ -525,23 +525,36 @@ Point3 refract(Point3 d, Point3 n, float e)
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
-	int bounceMax = 3;
-  Color c = Color::Black();
+	int bounceMax = 2;
 	if (!hInfo.node || bounceCount > bounceMax) {
-    return c;
+    return Color::Black();
   }
 
-	float e = 0.001;
+	float e = 0.01;
 
 	// Shirley 10.7
 	// Split the recursion path for dielectrics.
 	if (refraction != Color::Black()) {
 		Point3 t;
+		Color k;
+		float c;
+		float R = 0;
 		if (ray.dir % hInfo.N < 0) {
 			// "On the outisde looking in".
 			t = refract(ray.dir, hInfo.N, 1 / ior);
+			k = Color::White();
+			c = -ray.dir % hInfo.N;
 		} else {
 			t = refract(ray.dir, -hInfo.N, ior);
+			k.r = expf(-absorption.r * e);
+			k.g = expf(-absorption.g * e);
+			k.b = expf(-absorption.b * e);
+			if (!t.IsZero()) {
+				c = t % hInfo.N;
+			} else {
+				// TODO: Consider returning early after refactoring cast -> check node -> shade.
+				R = 1;
+			}
 		}
 
 		Color cRefract = Color::Black();
@@ -561,9 +574,14 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			cReflect = h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
 		}
 		
-		return cRefract + cReflect;
+		if (R == 0) {
+			float Ro = exp2f(1 / ior - 1) / exp2f(1 / ior + 1);
+			R = Ro + (1 - Ro) * powf(1 - c, 5);
+		}
+		return k * (R * cReflect + (1 - R) * cRefract * refraction);
 	}
 
+	Color c = Color::Black();
   for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
 		Color li = light->Illuminate(hInfo.p, hInfo.N);
@@ -585,19 +603,16 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			c +=  diffuse * li;
 		}
 	}
-
 	if (reflection != Color::Black()) {
 		// Shirley 10.6
 		Point3 r = reflect(ray.dir, hInfo.N);
 		Ray rn = Ray(hInfo.p + e * r, r);
 		HitInfo hn = cast(rn);
 		if (hn.node) {
-			// Is this needed? Why else would reflection be 0.7?
-			// c *= (Color::White() - reflection);
+			// c *= (Color::White() - reflection);?
 			c += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
 		}
 	}
-
 	return c;
 }
 
