@@ -513,10 +513,15 @@ Point3 reflect(Point3 d, Point3 n)
 }
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
+Point3 refract(Point3 d, Point3 n, float e)
 {
-	Color black = Color::Black();
-	int bounceMax = 1;
-	float t = 0.0001;
+	// Shirley 10.7
+	float k = 1 - e * e * (1 - (d % n) * (d % n));
+	if (k < 0) {  
+		return Point3(0, 0, 0);
+	}
+	return e * (d - n * (d % n)) - n * sqrt(k);
+}
 
   Color c = Color::Black();
 	if (!hInfo.node) {
