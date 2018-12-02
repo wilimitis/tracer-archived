@@ -434,22 +434,31 @@ void GlutMotion(int x, int y)
 //-------------------------------------------------------------------------------
 bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
-	Point3 origin = Point3(0, 0, 0);
-	Point3 oc = ray.p - origin;
-	float b = oc % ray.dir;
-	float c = oc % oc - 1;
-	float h = b * b - c;
-	if (h < 0.0) {
+	Point3 o = Point3(0, 0, 0);
+	float r = 1;
+	float b = ray.dir % ray.p;
+	float a = ray.dir % ray.dir;
+	float c = ray.p % ray.p - r * r;
+	float d = b * b - a * c;
+	if (d < 0) {
 		return false;
 	}
-	float z = -b - sqrt(h);
-	if (z > 0.0) {
-		hInfo.z = z;
-		hInfo.p = ray.p + ray.dir * hInfo.z;
-		hInfo.N = (hInfo.p - origin).GetNormalized();
-		return true;
+
+	d = sqrtf(d);
+	float t0 = (-ray.dir % ray.p - d) / a;
+	float t1 = (-ray.dir % ray.p + d) / a;
+	if (t0 < 0 && t1 < 0) {
+		return false;
 	}
-	return false;
+	
+	if (t0 == t1 || (t0 > 0 && t1 > 0)) {
+		hInfo.z = min(t0, t1);	
+	} else {
+		hInfo.z = max(t0, t1);
+	}
+	hInfo.p = ray.p + ray.dir * hInfo.z;
+	hInfo.N = (hInfo.p - o).GetNormalized();
+	return true;
 }
 
 void Sphere::ViewportDisplay(const Material *mtl) const
