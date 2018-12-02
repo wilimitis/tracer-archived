@@ -525,12 +525,12 @@ Point3 refract(Point3 d, Point3 n, float e)
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
-	int bounceMax = 2;
+	int bounceMax = 4;
 	if (!hInfo.node || bounceCount > bounceMax) {
     return Color::Black();
   }
 
-	float e = 0.01;
+	float e = 0.001;
 
 	// Shirley 10.7
 	// Split the recursion path for dielectrics.
