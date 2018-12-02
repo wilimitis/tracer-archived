@@ -472,6 +472,7 @@ void Sphere::ViewportDisplay(const Material *mtl) const
 
 HitInfo cast(Ray ro, Node *n = &rootNode)
 {
+	assert(!isnan(ro.dir.x));
   // Compute the ray in parent space.
   Ray r = Ray(ro);
   r = n->ToNodeCoords(r);
