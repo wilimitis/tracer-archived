@@ -16,10 +16,6 @@ ObjectList objects;
 Node rootNode;
 RenderImage renderImage;
 
-void print(Point3 p, const char *name) {
-  std::cout << name << ": " << p.x << ", " << p.y << ", " << p.z << std::endl;
-}
-
 float dtor(float d) {
   float pi = 3.141592653589793238462643383279502884197169;
   return d * (pi / 180);
