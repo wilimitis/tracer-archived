@@ -513,7 +513,6 @@ Point3 reflect(Point3 d, Point3 n)
 	return d - 2 * n * (d % n);
 }
 
-Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 Point3 refract(Point3 d, Point3 n, float e)
 {
 	// Shirley 10.7
@@ -524,10 +523,46 @@ Point3 refract(Point3 d, Point3 n, float e)
 	return e * (d - n * (d % n)) - n * sqrt(k);
 }
 
+Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
+{
+	int bounceMax = 3;
   Color c = Color::Black();
-	if (!hInfo.node) {
+	if (!hInfo.node || bounceCount > bounceMax) {
     return c;
   }
+
+	float e = 0.001;
+
+	// Shirley 10.7
+	// Split the recursion path for dielectrics.
+	if (refraction != Color::Black()) {
+		Point3 t;
+		if (ray.dir % hInfo.N < 0) {
+			// "On the outisde looking in".
+			t = refract(ray.dir, hInfo.N, 1 / ior);
+		} else {
+			t = refract(ray.dir, -hInfo.N, ior);
+		}
+
+		Color cRefract = Color::Black();
+		if (!t.IsZero()) {
+			Ray r = Ray(hInfo.p + e * t, t);
+			HitInfo h = cast(r);
+			if (h.node) {
+				cRefract = h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
+			}
+		}
+
+		Color cReflect = Color::Black();
+		Point3 rd = reflect(ray.dir, hInfo.N);
+		Ray r = Ray(hInfo.p + e * rd, rd);
+		HitInfo h = cast(r);
+		if (h.node) {
+			cReflect = h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
+		}
+		
+		return cRefract + cReflect;
+	}
 
   for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
@@ -551,17 +586,16 @@ Point3 refract(Point3 d, Point3 n, float e)
 		}
 	}
 
-	if (reflection != black) {
+	if (reflection != Color::Black()) {
 		// Shirley 10.6
 		Point3 r = reflect(ray.dir, hInfo.N);
-		Ray rn = Ray(hInfo.p + t * r, r);
+		Ray rn = Ray(hInfo.p + e * r, r);
 		HitInfo hn = cast(rn);
-		if (hn.node && bounceCount != bounceMax) {
+		if (hn.node) {
+			// Is this needed? Why else would reflection be 0.7?
 			// c *= (Color::White() - reflection);
 			c += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
 		}
-	} else if (refraction != black) {
-		// Shirley 10.7
 	}
 
 	return c;
