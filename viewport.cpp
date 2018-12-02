@@ -595,8 +595,8 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
         Point3 v = (ray.p - hInfo.p).GetNormalized();
         Point3 h = (l + v).GetNormalized();
         float sa = max(h % hInfo.N, 0);
-        s = powf(sa, glossiness * 2);
-				c += specular * s * li;
+        s = powf(sa, glossiness);
+				c += specular * lambertian * s * li;
       }
 			c += diffuse * lambertian * li;
     } else {
