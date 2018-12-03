@@ -547,9 +547,42 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 
 	float e = 0.001;
 
-	// Shirley 10.7
-	// Split the recursion path for dielectrics.
+	for (int i = 0; i < lights.size(); i++) {
+    Light *light = lights[i];
+		Color li = light->Illuminate(hInfo.p, hInfo.N);
+    if (!light->IsAmbient()) {
+      float s = 0;
+      Point3 l = light->Direction(hInfo.p).GetNormalized() * -1;
+			float lambertian = max(l % hInfo.N, 0);
+      if (lambertian > 0) {
+        // Blinn-Phong
+        // https://en.wikipedia.org/wiki/Blinn–Phong_shading_model
+        Point3 v = (ray.p - hInfo.p).GetNormalized();
+        Point3 h = (l + v).GetNormalized();
+        float sa = max(h % hInfo.N, 0);
+        s = powf(sa, glossiness);
+				color += specular * lambertian * s * li;
+      }
+			color += diffuse * lambertian * li;
+    } else {
+			color +=  diffuse * li;
+		}
+	}
+
+	if (reflection != Color::Black()) {
+		// Shirley 10.6
+		Point3 r = reflect(ray.dir, hInfo.N);
+		Ray rn = Ray(hInfo.p + e * r, r);
+		HitInfo hn = cast(rn);
+		if (hn.node) {
+			// c *= (Color::White() - reflection);?
+			color += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
+		}
+	}
+
 	if (refraction != Color::Black()) {
+		// Shirley 10.7
+		// Split the recursion path for dielectrics.
 		Point3 t;
 		Color k;
 		float c;
@@ -595,39 +628,6 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			R = Ro + (1 - Ro) * powf(1 - c, 5);
 		}
 		color += k * (R * cReflect + (1 - R) * cRefract * refraction);
-	}
-
-  for (int i = 0; i < lights.size(); i++) {
-    Light *light = lights[i];
-		Color li = light->Illuminate(hInfo.p, hInfo.N);
-    if (!light->IsAmbient()) {
-      float s = 0;
-      Point3 l = light->Direction(hInfo.p).GetNormalized() * -1;
-			float lambertian = max(l % hInfo.N, 0);
-      if (lambertian > 0) {
-        // Blinn-Phong
-        // https://en.wikipedia.org/wiki/Blinn–Phong_shading_model
-        Point3 v = (ray.p - hInfo.p).GetNormalized();
-        Point3 h = (l + v).GetNormalized();
-        float sa = max(h % hInfo.N, 0);
-        s = powf(sa, glossiness);
-				color += specular * lambertian * s * li;
-      }
-			color += diffuse * lambertian * li;
-    } else {
-			color +=  diffuse * li;
-		}
-	}
-
-	if (reflection != Color::Black()) {
-		// Shirley 10.6
-		Point3 r = reflect(ray.dir, hInfo.N);
-		Ray rn = Ray(hInfo.p + e * r, r);
-		HitInfo hn = cast(rn);
-		if (hn.node) {
-			// c *= (Color::White() - reflection);?
-			color += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
-		}
 	}
 
 	return color;
