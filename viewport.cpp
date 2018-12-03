@@ -525,11 +525,13 @@ Point3 refract(Point3 d, Point3 n, float e)
 
 float GenLight::Shadow(Ray ray, float t_max)
 {
+	// TODO: t_max for point lights was modified to be |L| instead of 1.
+	// Figure out what exactly 1 corresponds to.
 	float e = 0.01;
 	Ray r = Ray(ray.p, ray.dir.GetNormalized());
 	r.p = r.p + e * r.dir;
 	HitInfo h = cast(r);
-	if (h.node && (h.p - r.p).GetNormalized().Length() <= t_max + e) {
+	if (h.node && h.z <= t_max) {
 		return 0;
 	}
 	return 1;

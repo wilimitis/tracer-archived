@@ -62,7 +62,7 @@ class PointLight : public GenLight
 {
 public:
 	PointLight() : intensity(0,0,0), position(0,0,0) {}
-	virtual Color Illuminate(const Point3 &p, const Point3 &N) const { return Shadow(Ray(p,position-p),1) * intensity; }
+	virtual Color Illuminate(const Point3 &p, const Point3 &N) const { return Shadow(Ray(p,position-p), (position-p).Length()) * intensity; }
 	virtual Point3 Direction(const Point3 &p) const { return (p-position).GetNormalized(); }
 	virtual void SetViewportLight(int lightID) const { SetViewportParam(lightID,ColorA(0.0f),ColorA(intensity),Point4(position,1.0f)); }
 	void SetIntensity(Color intens) { intensity=intens; }
