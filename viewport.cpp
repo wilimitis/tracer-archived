@@ -523,6 +523,18 @@ Point3 refract(Point3 d, Point3 n, float e)
 	return e * (d - n * (d % n)) - n * sqrt(k);
 }
 
+float GenLight::Shadow(Ray ray, float t_max)
+{
+	float e = 0.01;
+	Ray r = Ray(ray.p, ray.dir.GetNormalized());
+	r.p = r.p + e * r.dir;
+	HitInfo h = cast(r);
+	if (h.node && (h.p - r.p).GetNormalized().Length() <= t_max + e) {
+		return 0;
+	}
+	return 1;
+}
+
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
 	int bounceMax = 4;
