@@ -595,9 +595,12 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			c = -ray.dir % hInfo.N;
 		} else {
 			t = refract(ray.dir, -hInfo.N, 1 / n);
-			k.r = expf(-absorption.r * e);
-			k.g = expf(-absorption.g * e);
-			k.b = expf(-absorption.b * e);
+			// TODO: Consider tracking ray distance travelled within absorbing object.
+			// https://computergraphics.stackexchange.com/a/414
+			float d = e;
+			k.r = expf(-absorption.r * d);
+			k.g = expf(-absorption.g * d);
+			k.b = expf(-absorption.b * d);
 			if (!t.IsZero()) {
 				c = t % hInfo.N;
 			} else {
