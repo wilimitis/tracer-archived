@@ -539,7 +539,8 @@ float GenLight::Shadow(Ray ray, float t_max)
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
-	int bounceMax = 4;
+	int bounceMax = 3;
+	Color color = Color::Black();
 	if (!hInfo.node || bounceCount > bounceMax) {
     return Color::Black();
   }
@@ -552,14 +553,15 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		Point3 t;
 		Color k;
 		float c;
+		float n = 1 / ior;
 		float R = 0;
 		if (ray.dir % hInfo.N < 0) {
 			// "On the outisde looking in".
-			t = refract(ray.dir, hInfo.N, 1 / ior);
+			t = refract(ray.dir, hInfo.N, n);
 			k = Color::White();
 			c = -ray.dir % hInfo.N;
 		} else {
-			t = refract(ray.dir, -hInfo.N, ior);
+			t = refract(ray.dir, -hInfo.N, 1 / n);
 			k.r = expf(-absorption.r * e);
 			k.g = expf(-absorption.g * e);
 			k.b = expf(-absorption.b * e);
@@ -589,13 +591,12 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		}
 		
 		if (R == 0) {
-			float Ro = exp2f(1 / ior - 1) / exp2f(1 / ior + 1);
+			float Ro = ((n - 1) * (n - 1)) / ((n + 1) * (n + 1));
 			R = Ro + (1 - Ro) * powf(1 - c, 5);
 		}
-		return k * (R * cReflect + (1 - R) * cRefract * refraction);
+		color += k * (R * cReflect + (1 - R) * cRefract * refraction);
 	}
 
-	Color c = Color::Black();
   for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
 		Color li = light->Illuminate(hInfo.p, hInfo.N);
@@ -610,13 +611,14 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
         Point3 h = (l + v).GetNormalized();
         float sa = max(h % hInfo.N, 0);
         s = powf(sa, glossiness);
-				c += specular * lambertian * s * li;
+				color += specular * lambertian * s * li;
       }
-			c += diffuse * lambertian * li;
+			color += diffuse * lambertian * li;
     } else {
-			c +=  diffuse * li;
+			color +=  diffuse * li;
 		}
 	}
+
 	if (reflection != Color::Black()) {
 		// Shirley 10.6
 		Point3 r = reflect(ray.dir, hInfo.N);
@@ -624,10 +626,11 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		HitInfo hn = cast(rn);
 		if (hn.node) {
 			// c *= (Color::White() - reflection);?
-			c += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
+			color += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
 		}
 	}
-	return c;
+
+	return color;
 }
 
 void MtlBlinn::SetViewportMaterial(int subMtlID) const
