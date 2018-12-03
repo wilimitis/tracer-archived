@@ -630,7 +630,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			float Ro = ((n - 1) * (n - 1)) / ((n + 1) * (n + 1));
 			R = Ro + (1 - Ro) * powf(1 - c, 5);
 		}
-		color += k * (R * cReflect + (1 - R) * cRefract * refraction);
+		color += refraction * k * (R * cReflect + (1 - R) * cRefract);
 	}
 
 	return color;
