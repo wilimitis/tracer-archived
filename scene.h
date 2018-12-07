@@ -2,8 +2,8 @@
 ///
 /// \file       scene.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    4.0
-/// \date       September 1, 2017
+/// \version    5.0
+/// \date       September 18, 2017
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -61,6 +61,64 @@ public:
 	Ray(const Point3 &_p, const Point3 &_dir) : p(_p), dir(_dir) {}
 	Ray(const Ray &r) : p(r.p), dir(r.dir) {}
 	void Normalize() { dir.Normalize(); }
+};
+
+//-------------------------------------------------------------------------------
+
+class Box
+{
+public:
+	Point3 pmin, pmax;
+
+	// Constructors
+	Box() { Init(); }
+	Box(const Point3 &_pmin, const Point3 &_pmax) : pmin(_pmin), pmax(_pmax) {}
+	Box(float xmin, float ymin, float zmin, float xmax, float ymax, float zmax ) : pmin(xmin,ymin,zmin), pmax(xmax,ymax,zmax) {}
+	Box(const float *dim) : pmin(dim), pmax(&dim[3]) {}
+
+	// Initializes the box, such that there exists no point inside the box (i.e. it is empty).
+	void Init() { pmin.Set(BIGFLOAT,BIGFLOAT,BIGFLOAT); pmax.Set(-BIGFLOAT,-BIGFLOAT,-BIGFLOAT); }
+
+	// Returns true if the box is empty; otherwise, returns false.
+	bool IsEmpty() const { return pmin.x>pmax.x || pmin.y>pmax.y || pmin.z>pmax.z; }
+
+	// Returns one of the 8 corner point of the box in the following order:
+	// 0:(x_min,y_min,z_min), 1:(x_max,y_min,z_min)
+	// 2:(x_min,y_max,z_min), 3:(x_max,y_max,z_min)
+	// 4:(x_min,y_min,z_max), 5:(x_max,y_min,z_max)
+	// 6:(x_min,y_max,z_max), 7:(x_max,y_max,z_max)
+	Point3 Corner( int i ) const	// 8 corners of the box
+	{
+		Point3 p;
+		p.x = (i & 1) ? pmax.x : pmin.x;
+		p.y = (i & 2) ? pmax.y : pmin.y;
+		p.z = (i & 4) ? pmax.z : pmin.z;
+		return p;
+	}
+
+	// Enlarges the box such that it includes the given point p.
+	void operator += (const Point3 &p)
+	{
+		for ( int i=0; i<3; i++ ) {
+			if ( pmin[i] > p[i] ) pmin[i] = p[i];
+			if ( pmax[i] < p[i] ) pmax[i] = p[i];
+		}
+	}
+
+	// Enlarges the box such that it includes the given box b.
+	void operator += (const Box &b)
+	{
+		for ( int i=0; i<3; i++ ) {
+			if ( pmin[i] > b.pmin[i] ) pmin[i] = b.pmin[i];
+			if ( pmax[i] < b.pmax[i] ) pmax[i] = b.pmax[i];
+		}
+	}
+
+	// Returns true if the point is inside the box; otherwise, returns false.
+	bool IsInside(const Point3 &p) const { for ( int i=0; i<3; i++ ) if ( pmin[i] > p[i] || pmax[i] < p[i] ) return false; return true; }
+
+	// Returns true if the ray intersects with the box for any parameter that is smaller than t_max; otherwise, returns false.
+	bool IntersectRay(const Ray &r, float t_max) const;
 };
 
 //-------------------------------------------------------------------------------
@@ -192,6 +250,7 @@ class Object
 public:
 	virtual ~Object() {}
 	virtual bool IntersectRay( const Ray &ray, HitInfo &hInfo, int hitSide=HIT_FRONT ) const=0;
+	virtual Box  GetBoundBox() const=0;
 	virtual void ViewportDisplay(const Material *mtl) const {}	// used for OpenGL display
 };
 
@@ -218,6 +277,7 @@ public:
 	// The main method that handles the shading by calling all the lights in the list.
 	// ray: incoming ray,
 	// hInfo: hit information for the point that is being shaded, lights: the light list,
+	// bounceCount: permitted number of additional bounces for reflection and refraction.
 	virtual Color Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const=0;
 
 	virtual void SetViewportMaterial(int subMtlID=0) const {}	// used for OpenGL display
@@ -238,11 +298,12 @@ private:
 	int numChild;				// The number of child nodes
 	Object *obj;				// Object reference (merely points to the object, but does not own the object, so it doesn't get deleted automatically)
 	Material *mtl;				// Material used for shading the object
+	Box childBoundBox;			// Bounding box of the child nodes, which does not include the object of this node, but includes the objects of the child nodes
 public:
 	Node() : child(NULL), numChild(0), obj(NULL), mtl(NULL) {}
 	virtual ~Node() { DeleteAllChildNodes(); }
 
-	void Init() { DeleteAllChildNodes(); obj=NULL; mtl=NULL; SetName(NULL); InitTransform(); } // Initialize the node deleting all child nodes
+	void Init() { DeleteAllChildNodes(); obj=NULL; mtl=NULL; childBoundBox.Init(); SetName(NULL); InitTransform(); } // Initialize the node deleting all child nodes
 
 	// Hierarchy management
 	int	 GetNumChild() const { return numChild; }
@@ -266,6 +327,23 @@ public:
 	void		AppendChild(Node *node)		{ SetNumChild(numChild+1,true); SetChild(numChild-1,node); }
 	void		RemoveChild(int i)			{ for ( int j=i; j<numChild-1; j++) child[j]=child[j+1]; SetNumChild(numChild-1); }
 	void		DeleteAllChildNodes()		{ for ( int i=0; i<numChild; i++ ) { child[i]->DeleteAllChildNodes(); delete child[i]; } SetNumChild(0); }
+
+	// Bounding Box
+	const Box& ComputeChildBoundBox()
+	{
+		childBoundBox.Init();
+		for ( int i=0; i<numChild; i++ ) {
+			Box childBox = child[i]->ComputeChildBoundBox();
+			Object *cobj = child[i]->GetNodeObj();
+			if ( cobj ) childBox += cobj->GetBoundBox();
+			if ( ! childBox.IsEmpty() ) {
+				// transform the box from child coordinates
+				for ( int j=0; j<8; j++ ) childBoundBox += child[i]->TransformFrom( childBox.Corner(j) );
+			}
+		}
+		return childBoundBox;
+	}
+	const Box& GetChildBoundBox() const { return childBoundBox; }
 
 	// Object management
 	const Object*	GetNodeObj() const { return obj; }
