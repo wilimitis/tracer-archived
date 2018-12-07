@@ -463,12 +463,26 @@ bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 
 bool Plane::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
+	float e = 0.0001;
+	Point3 n = Point3(0, 0, 1);
+	float d = ray.dir % n;
+	if (abs(d) < e) {
+		return false;
+	}
+	float t = ((-ray.p) % n) / d;
+	Point3 p = ray.p + t * ray.dir;
+	if (t < 0 || p.x < -1 || p.x > 1 || p.y < -1 || p.y > 1) {
+		return false;
+	}
+	hInfo.z = t;
+	hInfo.p = p;
+	hInfo.N = n;
 	return true;
 }
 
 bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
-	return true;
+	return false;
 }
 
 HitInfo cast(Ray ro, Node *n = &rootNode)
