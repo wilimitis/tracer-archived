@@ -86,9 +86,12 @@ void BeginRender()
 
       // Compute for aspect ratio.
       // Shirley 7.5
-      float ar = camera.imgWidth > camera.imgHeight
+      float arw = camera.imgWidth > camera.imgHeight
         ? float(camera.imgWidth) / camera.imgHeight
-        : float(camera.imgHeight) / camera.imgWidth;
+        : 1;
+      float arh = camera.imgHeight > camera.imgWidth
+        ? float(camera.imgHeight) / camera.imgWidth
+        : 1;
       
       // Compute field of view.
       // Shirley 7.5
@@ -97,8 +100,8 @@ void BeginRender()
       // Compute screen coordinates in camera space.
       // Shirley 10.2
       Point3 sc = Point3(
-        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * ar * tf,
-        (b + (t - b) * ((j + 0.5) / camera.imgHeight)) * tf,
+        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * arw * tf,
+        (b + (t - b) * ((j + 0.5) / camera.imgHeight)) * arh * tf,
         -1
       );
 
