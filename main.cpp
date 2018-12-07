@@ -13,6 +13,7 @@ Camera camera;
 LightList lights;
 MaterialList materials;
 ObjectList objects;
+ObjFileList objList;
 Node rootNode;
 RenderImage renderImage;
 

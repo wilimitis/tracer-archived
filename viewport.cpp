@@ -461,13 +461,14 @@ bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 	return true;
 }
 
-void Sphere::ViewportDisplay(const Material *mtl) const
+bool Plane::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
-	static GLUquadric *q = NULL;
-	if ( q == NULL ) {
-		q = gluNewQuadric();
-	}
-	gluSphere(q,1,50,50);
+	return true;
+}
+
+bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
+{
+	return true;
 }
 
 HitInfo cast(Ray ro, Node *n = &rootNode)
@@ -636,14 +637,47 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 	return color;
 }
 
-void MtlBlinn::SetViewportMaterial(int subMtlID) const
+void Sphere::ViewportDisplay(const Material *mtl) const
 {
-	ColorA c;
-	c = ColorA(diffuse);
-	glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, &c.r );
-	c = ColorA(specular);
-	glMaterialfv( GL_FRONT, GL_SPECULAR, &c.r );
-	glMaterialf( GL_FRONT, GL_SHININESS, glossiness*1.5f );
+	static GLUquadric *q = NULL;
+	if ( q == NULL ) {
+		q = gluNewQuadric();
+	}
+	gluSphere(q,1,50,50);
+}
+
+void Plane::ViewportDisplay(const Material *mtl) const
+{
+	const int resolution = 32;
+	glPushMatrix();
+	glScalef(2.0f/resolution,2.0f/resolution,2.0f/resolution);
+	glNormal3f(0,0,1);
+	glBegin(GL_QUADS);
+	for ( int y=0; y<resolution; y++ ) {
+		float yy = y - resolution/2;
+		for ( int x=0; x<resolution; x++ ) {
+			float xx = x - resolution/2;
+			glVertex3f( yy,   xx,   0 );
+			glVertex3f( yy+1, xx,   0 );
+			glVertex3f( yy+1, xx+1, 0 );
+			glVertex3f( yy,   xx+1, 0 );
+		}
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+void TriObj::ViewportDisplay(const Material *mtl) const
+{
+	glBegin(GL_TRIANGLES);
+  for ( unsigned int i=0; i<NF(); i++ ) {
+    for ( int j=0; j<3; j++ ) {
+      if ( HasTextureVertices() ) glTexCoord3fv( &VT( FT(i).v[j] ).x );
+      if ( HasNormals() ) glNormal3fv( &VN( FN(i).v[j] ).x );
+      glVertex3fv( &V( F(i).v[j] ).x );
+    }
+  }
+  glEnd();
 }
 
 void GenLight::SetViewportParam(int lightID, ColorA ambient, ColorA intensity, Point4 pos ) const
@@ -653,6 +687,16 @@ void GenLight::SetViewportParam(int lightID, ColorA ambient, ColorA intensity, P
 	glLightfv( GL_LIGHT0 + lightID, GL_DIFFUSE,  &intensity.r );
 	glLightfv( GL_LIGHT0 + lightID, GL_SPECULAR, &intensity.r );
 	glLightfv( GL_LIGHT0 + lightID, GL_POSITION, &pos.x );
+}
+
+void MtlBlinn::SetViewportMaterial(int subMtlID) const
+{
+	ColorA c;
+	c = ColorA(diffuse);
+	glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, &c.r );
+	c = ColorA(specular);
+	glMaterialfv( GL_FRONT, GL_SPECULAR, &c.r );
+	glMaterialf( GL_FRONT, GL_SHININESS, glossiness*1.5f );
 }
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------

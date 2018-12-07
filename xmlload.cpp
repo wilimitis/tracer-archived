@@ -176,7 +176,9 @@ void LoadNode(Node *parent, TiXmlElement *element, int level)
 			node->SetNodeObj(s);
 			printf(" - Sphere");
 		} else if ( COMPARE(type,"plane") ) {
-			node->SetNodeObj( &thePlane );
+			Plane* p = new Plane;
+			objects.push_back(p);
+			node->SetNodeObj(p);
 			printf(" - Plane");
 		} else if ( COMPARE(type,"obj") ) {
 			printf(" - OBJ");

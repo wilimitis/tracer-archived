@@ -17,6 +17,10 @@
 
 //-------------------------------------------------------------------------------
 
+class ObjectList : public ItemList<Object> {};
+
+//-------------------------------------------------------------------------------
+
 class Sphere : public Object
 {
 public:
@@ -25,7 +29,6 @@ public:
 	virtual void ViewportDisplay(const Material *mtl) const;
 };
 
-class ObjectList : public ItemList<Object> {};
 extern Sphere theSphere;
 
 //-------------------------------------------------------------------------------
