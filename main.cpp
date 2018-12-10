@@ -6,6 +6,7 @@
 #define USE_GLUT
 
 #include <iostream>
+#include <thread>
 #include "viewport.cpp"
 #include "xmlload.cpp"
 
@@ -52,7 +53,7 @@ Color shade(Ray &r, HitInfo &h)
   return h.node->GetMaterial()->Shade(r, h, lights, 0);
 }
 
-void render(int i, int j, Ray r)
+void color(int i, int j, Ray r)
 {
   HitInfo h = cast(r);
   
@@ -65,12 +66,10 @@ void render(int i, int j, Ray r)
   renderImage.setRenderedPixel(i, j, c);
 }
 
-void BeginRender()
+void render(int w1, int w2, int h1, int h2)
 {
-  std::cout << "begin render" << std::endl;
-  
-  for (int i = 0; i < camera.imgWidth; i++) {
-    for (int j = 0; j < camera.imgHeight; j++) {
+  for (int i = w1; i < w2; i++) {
+    for (int j = h1; j < h2; j++) {
       // Useful reference.
       // https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays
 
@@ -111,8 +110,30 @@ void BeginRender()
       Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
 
       Point3 rd = (sw - camera.pos).GetNormalized();
-      render(i, j, Ray(camera.pos, rd));
+      color(i, j, Ray(camera.pos, rd));
     }
+  }
+}
+
+void BeginRender()
+{
+  std::cout << "begin render" << std::endl;
+  
+  int n = 2;
+  std::thread threads[n * n];
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      threads[i * n + j] = std::thread(
+        render,
+        (camera.imgWidth / n) * i,
+        (camera.imgWidth / n) * (i + 1),
+        (camera.imgHeight / n) * j,
+        (camera.imgHeight / n) * (j + 1)
+      );
+    }
+  }
+  for (int i = 0; i < n * n; i++) {
+    threads[i].join();
   }
 }
 
