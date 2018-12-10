@@ -571,6 +571,64 @@ bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 	return intersected;
 }
 
+bool Box::IntersectRay(const Ray &ray, float t_max) const
+{
+	// http://www.cs.utah.edu/~awilliam/box/box.pdf	
+	float tmin;
+	float tmax;
+	float tymin;
+	float tymax;
+	float tzmin;
+	float tzmax;
+
+	float dx = 1.0 / ray.dir.x;
+	if (dx >= 0) {
+		tmin = (pmin.x - ray.p.x) * dx;
+		tmax = (pmax.x - ray.p.x) * dx;
+	} else {
+		tmin = (pmax.x - ray.p.x) * dx;
+		tmax = (pmin.x - ray.p.x) * dx;
+	}
+
+	float dy = 1.0 / ray.dir.y;
+	if (dy >= 0) {
+		tymin = (pmin.y - ray.p.y) * dy;
+		tymax = (pmax.y - ray.p.y) * dy;
+	} else {
+		tymin = (pmax.y - ray.p.y) * dy;
+		tymax = (pmin.y - ray.p.y) * dy;
+	}
+	if (tmin > tymax || tymin > tmax) {
+		return false;
+	}
+	if (tymin > tmin) {
+		tmin = tymin;
+	}
+	if (tymax < tmax) {
+		tmax = tymax;
+	}
+
+	float dz = 1.0 / ray.dir.z;
+	if (dz >= 0) {
+		tzmin = (pmin.z - ray.p.z) * dz;
+		tzmax = (pmax.z - ray.p.z) * dz;
+	} else {
+		tzmin = (pmax.z - ray.p.z) * dz;
+		tzmax = (pmin.z - ray.p.z) * dz;
+	}
+	if (tmin > tzmax || tzmin > tmax) {
+		return false;
+	}
+	if (tzmin > tmin) {
+		tmin = tzmin;
+	}
+	if (tzmax < tmax) {
+		tmax = tzmax;
+	}
+
+	return tmin < t_max && tmax > 0;
+}
+
 HitInfo cast(Ray ro, Node *n = &rootNode)
 {
 	assert(!isnan(ro.dir.x));
@@ -583,7 +641,7 @@ HitInfo cast(Ray ro, Node *n = &rootNode)
   HitInfo h = HitInfo();
   Object *o = n->GetNodeObj();
   if (o) {
-    if (o->IntersectRay(r, h)) {
+    if (o->GetBoundBox().IntersectRay(r, BIGFLOAT) && o->IntersectRay(r, h)) {
       // h.z is set in IntersectRay.
       h.node = n;
     }
@@ -646,7 +704,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
     return Color::Black();
   }
 
-	float e = 0.0001;
+	float e = 0.001;
 
 	for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
