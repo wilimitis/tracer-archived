@@ -456,7 +456,7 @@ bool Sphere::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 	} else {
 		hInfo.z = max(t0, t1);
 	}
-	hInfo.p = ray.p + ray.dir * hInfo.z;
+	hInfo.p = ray.p + hInfo.z * ray.dir;
 	hInfo.N = (hInfo.p - o).GetNormalized();
 	return true;
 }
@@ -480,9 +480,95 @@ bool Plane::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 	return true;
 }
 
+bool TriObj::IntersectTriangle(const Ray &ray, HitInfo &hInfo, int hitSide, unsigned int faceID) const
+{
+	// https://graphics.cs.utah.edu/courses/cs6620/fall2017/?prj=5
+	// http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
+	// https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals
+	float eta = 0.000001;
+	Point3 v0 = V(F(faceID).v[0]);
+	Point3 v1 = V(F(faceID).v[1]);
+	Point3 v2 = V(F(faceID).v[2]);
+	Point3 e1 = v1 - v0;
+	Point3 e2 = v2 - v0;
+
+	Point3 p = ray.dir ^ e2;
+	float d = e1 % p;
+
+	float u;
+	float v;
+	float z;
+	bool cull = true;
+	if (cull) {
+		if (d < eta) {
+			return false;
+		}
+
+		Point3 t = ray.p - v0;
+		u = t % p;
+		if (u < 0 || u > d) {
+			return false;
+		}
+
+		Point3 q = t ^ e1;
+		v = ray.dir % q;
+		if (v < 0 || u + v > d) {
+			return false;
+		}
+
+		z = e2 % q;
+		float di = 1.0 / d;
+		z *= di;
+		u *= di;
+		v *= di;
+	} else {
+		if (d > -eta && d < eta) {
+			return false;
+		}
+
+		float di = 1.0 / d;
+		Point3 t = ray.p - v0;
+		u = (t % p) * di;
+		if (u < 0 || u > 1) {
+			return false;
+		}
+
+		Point3 q = t ^ e1;
+		v = (ray.dir % q) * di;
+		if (v < 0 || u + v > 1) {
+			return false;
+		}
+
+		z = (e2 % q) * di;
+	}
+
+	if (z < 0) {
+		return false;
+	}
+
+	hInfo.z = z;
+	hInfo.p = ray.p + hInfo.z * ray.dir;
+	// hInfo.N = e1 ^ e2;
+	hInfo.N = 
+		(1 - u - v) * VN(FN(faceID).v[0]) +
+		u * VN(FN(faceID).v[1])+
+		v * VN(FN(faceID).v[2]);
+	return true;
+}
+
 bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
 {
-	return false;
+	bool intersected = false;
+	for (int i = 0; i < NF(); i++) {
+		HitInfo h;
+		if (IntersectTriangle(ray, h, hitSide, i)) {
+			intersected = true;
+			if (h.z < hInfo.z) {
+				hInfo = h;
+			}
+		}
+	}
+	return intersected;
 }
 
 HitInfo cast(Ray ro, Node *n = &rootNode)
@@ -560,7 +646,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
     return Color::Black();
   }
 
-	float e = 0.001;
+	float e = 0.0001;
 
 	for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
