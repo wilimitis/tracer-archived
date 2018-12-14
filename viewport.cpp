@@ -19,6 +19,7 @@
 #include "materials.h"
 #include <stdlib.h>
 #include <time.h>
+#include <random>
 
 #ifdef USE_GLUT
 # ifdef __APPLE__
@@ -696,9 +697,34 @@ float GenLight::Shadow(Ray ray, float t_max)
 	return 1;
 }
 
+Point3 sample(Point3 n, float r1, float r2)
+{
+	assert(n.Length() <= 1.5);
+	Point3 w = n;
+	Point3 u = Point3(n.z, 0, -n.x).GetNormalized();
+	Point3 v = w ^ u;
+
+	float st = sqrtf(1 - r1 * r1);
+	float p = 2 * M_PI * r2;
+	float x = st * cosf(p);
+	float y = r1;
+	float z = st * sinf(p);
+	Point3 s = Point3(x, y, z);
+	assert(s.Length() <= 1.5);
+	
+	return Point3(
+		s.x * v.x + s.y * n.x + s.z * u.x,
+		s.x * v.y + s.y * n.y + s.z * u.y,
+		s.x * v.z + s.y * n.z + s.z * u.z
+	);
+}
+
+std::default_random_engine generator;
+std::uniform_real_distribution<float> distribution(0, 1);
+
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
-	int bounceMax = 3;
+	int bounceMax = 1;
 	Color color = Color::Black();
 	if (!hInfo.node || bounceCount > bounceMax) {
     return Color::Black();
@@ -706,11 +732,11 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 
 	float e = 0.001;
 
+	// Lights
 	for (int i = 0; i < lights.size(); i++) {
     Light *light = lights[i];
 		Color li = light->Illuminate(hInfo.p, hInfo.N);
     if (!light->IsAmbient()) {
-      float s = 0;
       Point3 l = light->Direction(hInfo.p).GetNormalized() * -1;
 			float lambertian = max(l % hInfo.N, 0);
       if (lambertian > 0) {
@@ -719,7 +745,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
         Point3 v = (ray.p - hInfo.p).GetNormalized();
         Point3 h = (l + v).GetNormalized();
         float sa = max(h % hInfo.N, 0);
-        s = powf(sa, glossiness);
+        float s = powf(sa, glossiness);
 				color += specular * lambertian * s * li;
       }
 			color += diffuse * lambertian * li;
@@ -728,6 +754,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		}
 	}
 
+	// Reflection
 	if (reflection != Color::Black()) {
 		// Shirley 10.6
 		Point3 r = reflect(ray.dir, hInfo.N);
@@ -739,6 +766,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		}
 	}
 
+	// Refraction
 	if (refraction != Color::Black()) {
 		// Shirley 10.7
 		// Split the recursion path for dielectrics.
@@ -791,6 +819,23 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		}
 		color += refraction * k * (R * cReflect + (1 - R) * cRefract);
 	}
+
+	// Path Tracing (diffuse)
+	Color id = Color::Black();
+	float pdf = 1 / (2 * M_PI);
+	int S = 1000;
+	for (int i = 0; i < S; i++) {
+		float r1 = distribution(generator);
+		float r2 = distribution(generator);
+		Point3 rd = sample(hInfo.N, r1, r2);
+		Ray r = Ray(hInfo.p + rd * e, rd);
+		HitInfo h = cast(r);
+		if (h.node) {
+			id += r1 * h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1) / pdf;
+		}
+	}
+	id /= (float) S;
+	color = (color + id) / M_PI;
 
 	return color;
 }
