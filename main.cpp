@@ -53,17 +53,13 @@ Color shade(Ray &r, HitInfo &h)
   return h.node->GetMaterial()->Shade(r, h, lights, 0);
 }
 
-void color(int i, int j, Ray r)
+Color color(int i, int j, Ray r)
 {
   HitInfo h = cast(r);
-  
   renderImage.setZBufferPixel(i, j, h.z);
-  
-  int b = 2;
-  Color24 c = Color24(shade(r, h));
-  // Color24 c = normalMap(h);
-
-  renderImage.setRenderedPixel(i, j, c);
+  Color c = shade(r, h);
+  // Color c = normalMap(h);
+  return c;
 }
 
 void render(int w1, int w2, int h1, int h2)
@@ -81,7 +77,7 @@ void render(int w1, int w2, int h1, int h2)
       // Construct a coordinate system (orthonormal frame).
       // Shirley 7.2.1
       Point3 w = Point3(camera.dir).GetNormalized() * -1;
-      Point3 u = camera.up.Cross(w).GetNormalized();
+      Point3 u = camera.up.Cross(w).GetNormalized(); 
       Point3 v = w.Cross(u);
 
       // Compute for aspect ratio.
@@ -97,20 +93,30 @@ void render(int w1, int w2, int h1, int h2)
       // Shirley 7.5
       float tf = tan(dtor(camera.fov / 2)) * abs(n);
 
-      // Compute screen coordinates in camera space.
-      // Shirley 10.2
-      Point3 sc = Point3(
-        (l + (r - l) * ((i + 0.5) / camera.imgWidth)) * arw * tf,
-        (b + (t - b) * ((j + 0.5) / camera.imgHeight)) * arh * tf,
-        -1
-      );
+      // Supersample anti-aliasing
+      Color c = Color::Black();
+      int AA = 8;
+      for (int a1 = 0; a1 < AA; a1++) {
+        for (int a2 = 0; a2 < AA; a2++) {
+          Point2 o = Point2(a1, a2) / float(AA) - 0.5;
 
-      // Compute screen position in world space.
-      // Shirley 10.2
-      Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
+          // Compute screen coordinates in camera space.
+          // Shirley 10.2
+          Point3 sc = Point3(
+            (l + (r - l) * ((i + 0.5 + o.x) / camera.imgWidth)) * arw * tf,
+            (b + (t - b) * ((j + 0.5 + o.y) / camera.imgHeight)) * arh * tf,
+            -1
+          );
 
-      Point3 rd = (sw - camera.pos).GetNormalized();
-      color(i, j, Ray(camera.pos, rd));
+          // Compute screen position in world space.
+          // Shirley 10.2
+          Point3 sw = camera.pos + sc.x * u + sc.y * v + sc.z * w;
+          Point3 rd = (sw - camera.pos).GetNormalized();
+
+          c += color(i, j, Ray(camera.pos, rd));
+        }
+      }
+      renderImage.setRenderedPixel(i, j, Color24(c / float(AA * AA)));
     }
   }
 }
