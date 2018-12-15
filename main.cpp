@@ -135,6 +135,7 @@ void BeginRender()
   for (int i = 0; i < n * n; i++) {
     threads[i].join();
   }
+  renderImage.SaveImage("image.png");
 }
 
 void StopRender()

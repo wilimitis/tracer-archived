@@ -9,11 +9,12 @@
       "command": "g++",
       "args": [
         "-o", "build/tracer",
-        "-std=c++11",
+        "-std=c++17",
         "-g", "-v",
         "-framework", "GLUT",
         "-framework", "OpenGL",
         // TODO: Make into lib?
+        "lodepng.cpp",
         "tinyxml/tinystr.cpp", "tinyxml/tinyxml.cpp", "tinyxml/tinyxmlerror.cpp", "tinyxml/tinyxmlparser.cpp",
         "main.cpp"
       ],
