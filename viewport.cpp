@@ -630,9 +630,19 @@ bool Box::IntersectRay(const Ray &ray, float t_max) const
 	return tmin < t_max && tmax > 0;
 }
 
+void assertRay(Ray &r) {
+	assert(!isnan(r.p.x));
+	assert(!isnan(r.p.y));
+	assert(!isnan(r.p.z));
+
+	assert(!isnan(r.dir.x));
+	assert(!isnan(r.dir.y));
+	assert(!isnan(r.dir.z));
+}
+
 HitInfo cast(Ray ro, Node *n = &rootNode)
 {
-	assert(!isnan(ro.dir.x));
+	assertRay(ro);
   // Compute the ray in parent space.
   Ray r = Ray(ro);
   r = n->ToNodeCoords(r);
@@ -697,9 +707,13 @@ float GenLight::Shadow(Ray ray, float t_max)
 	return 1;
 }
 
+void assertNormal(Point3 &p) {
+	assert(p.Length() <= 1.1);
+}
+
 Point3 sample(Point3 n, float r1, float r2)
 {
-	assert(n.Length() <= 1.5);
+	assertNormal(n);
 	Point3 w = n;
 	Point3 u = Point3(n.z, 0, -n.x).GetNormalized();
 	Point3 v = w ^ u;
@@ -710,17 +724,25 @@ Point3 sample(Point3 n, float r1, float r2)
 	float y = r1;
 	float z = st * sinf(p);
 	Point3 s = Point3(x, y, z);
-	assert(s.Length() <= 1.5);
+	assertNormal(s);
 	
-	return Point3(
-		s.x * v.x + s.y * n.x + s.z * u.x,
-		s.x * v.y + s.y * n.y + s.z * u.y,
-		s.x * v.z + s.y * n.z + s.z * u.z
+	s = Point3(
+		s.x * u.x + s.y * v.x + s.z * w.x,
+		s.x * u.y + s.y * v.y + s.z * w.y,
+		s.x * u.z + s.y * v.z + s.z * w.z
 	);
+	assertNormal(s);
+	return s;
 }
 
 std::default_random_engine generator;
 std::uniform_real_distribution<float> distribution(0, 1);
+
+void assertColor(Color &c) {
+	assert(!isnan(c.r));
+	assert(!isnan(c.g));
+	assert(!isnan(c.b));
+}
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
@@ -828,6 +850,14 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		float r1 = distribution(generator);
 		float r2 = distribution(generator);
 		Point3 rd = sample(hInfo.N, r1, r2);
+		
+		float ndrd = hInfo.N % rd;
+		if (ndrd < 0) {
+			// If sample created a slightly bogus value then throw it away.
+			assert(ndrd > -0.1);
+			continue;
+		}
+
 		Ray r = Ray(hInfo.p + rd * e, rd);
 		HitInfo h = cast(r);
 		if (h.node) {
@@ -837,6 +867,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 	id /= (float) S;
 	color = (color + id) / M_PI;
 
+	assertColor(color);
 	return color;
 }
 
