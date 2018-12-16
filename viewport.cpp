@@ -718,12 +718,14 @@ Point3 sample(Point3 n, float r1, float r2)
 	Point3 u = Point3(n.z, 0, -n.x).GetNormalized();
 	Point3 v = w ^ u;
 
-	float st = sqrtf(1 - r1 * r1);
-	float p = 2 * M_PI * r2;
-	float x = st * cosf(p);
-	float y = r1;
-	float z = st * sinf(p);
-	Point3 s = Point3(x, y, z);
+	// Shirley 14.4.1
+	float p = 2 * M_PI * r1;
+	float st = sqrtf(r2);
+	Point3 s = Point3(
+		cosf(p) * st,
+		sinf(p) * st,
+		sqrtf(1 - r2)
+	);
 	assertNormal(s);
 	
 	s = Point3(
@@ -842,10 +844,13 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		color += refraction * k * (R * cReflect + (1 - R) * cRefract);
 	}
 
+	if (bounceCount + 1 > bounceMax) {
+		return color;
+	}
+
 	// Path Tracing (diffuse)
 	Color id = Color::Black();
-	float pdf = 1 / (2 * M_PI);
-	int S = 1000;
+	int S = 16;
 	for (int i = 0; i < S; i++) {
 		float r1 = distribution(generator);
 		float r2 = distribution(generator);
@@ -861,11 +866,10 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		Ray r = Ray(hInfo.p + rd * e, rd);
 		HitInfo h = cast(r);
 		if (h.node) {
-			id += r1 * h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1) / pdf;
+			id +=  h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
 		}
 	}
-	id /= (float) S;
-	color = (color + id) / M_PI;
+	color = color + id * diffuse / S;
 
 	assertColor(color);
 	return color;
