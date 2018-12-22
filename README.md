@@ -1,6 +1,6 @@
 # tracer
 
-A multi-threaded, batch renderer built on top of the University of Utah Ray Tracing course sample code.
+A multi-threaded, batch renderer built on top of the University of Utah Ray Tracing course sample code.  
 Primary reference: Dr. Shirley's [Fundamentals of Computer Graphics](https://www.cs.cornell.edu/~srm/fcg4/).
 
 | Monte Carlo global illumination | Recursive reflection and refraction | Polygonal meshes via Möller-Trumbore |
