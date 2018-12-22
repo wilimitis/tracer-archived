@@ -2,6 +2,11 @@
 
 ![](https://wilimitis.github.io/assets/img/2018-12-10-project-1.png)
 
+Todo
+- antialiasing (obviously)
+- bdrf experimentation
+- acceleration structure experimentation
+
 Following along with the University of Utah Ray Tracing course in which, over the semester, the students implement various direct illumination features and, ultimately, implement indirect illumination features.
 
 ![](https://wilimitis.github.io/assets/img/2018-12-10-project-2.png)
