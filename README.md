@@ -1,16 +1,14 @@
 # tracer
 
-| Feature | Image |
-| --- | --- |
-| Monte Carlo global illumination | <img src="https://wilimitis.github.io/assets/img/2018-12-14-project-1.png" width="300"/> |
-| Polygonal meshes via Möller-Trumbore | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-1.png" width="300"/> |
-| Recursive reflection and refraction | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-2.png" width="300"/> |
+Following along with the University of Utah Ray Tracing course in which, over the semester, the students implement various direct illumination features and, ultimately, implement indirect illumination features.
+
+| Monte Carlo global illumination | Recursive reflection and refraction | Polygonal meshes via Möller-Trumbore |
+| --- | --- | --- |
+| <img src="https://wilimitis.github.io/assets/img/2018-12-14-project-1.png" width="300"/> | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-2.png" width="300"/> | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-1.png" width="300"/> |
 
 Todo
 - bdrf experimentation
 - acceleration structure experimentation
-
-Following along with the University of Utah Ray Tracing course in which, over the semester, the students implement various direct illumination features and, ultimately, implement indirect illumination features.
 
 The above image is a culmination of implementing algorithms to support
 - coordinate space transformations: screen, camera, world, object
