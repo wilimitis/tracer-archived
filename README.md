@@ -15,9 +15,9 @@ The above image is a culmination of implementing algorithms to support
 - recursive scene graph scaling
 - naïve lighting: ambient, diffuse, specular
 - naïve shadow rays
-- recursive reflection and refraction
-- polygonal meshes via Möller-Trumbore
 - non-adaptive antialiasing
+- polygonal meshes via Möller-Trumbore
+- recursive reflection and refraction
 - Monte Carlo global illumination
 
 I immediately realized the difficulties that would result from attempting to follow along _outside_ the class, however didn't give up and worked my way through the first 5 projects before branching off and approaching global illumination. Perhaps the most useful resource I've encounted thus far is Dr. Shirley's [Fundamentals of Computer Graphics](https://www.cs.cornell.edu/~srm/fcg4/).
