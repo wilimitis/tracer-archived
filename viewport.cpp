@@ -850,7 +850,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 
 	// Path Tracing (diffuse)
 	Color id = Color::Black();
-	int S = 16;
+	int S = 1;
 	for (int i = 0; i < S; i++) {
 		float r1 = distribution(generator);
 		float r2 = distribution(generator);

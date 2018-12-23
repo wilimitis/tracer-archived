@@ -95,7 +95,7 @@ void render(int w1, int w2, int h1, int h2)
 
       // Supersample anti-aliasing
       Color c = Color::Black();
-      int AA = 8;
+      int AA = 1;
       for (int a1 = 0; a1 < AA; a1++) {
         for (int a2 = 0; a2 < AA; a2++) {
           Point2 o = Point2(a1, a2) / float(AA) - 0.5;
