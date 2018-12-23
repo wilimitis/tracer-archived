@@ -8,8 +8,8 @@ Primary reference: Dr. Shirley's [Fundamentals of Computer Graphics](https://www
 | <img src="https://wilimitis.github.io/assets/img/2018-12-14-project-1.png" width="300"/> | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-2.png" width="300"/> | <img src="https://wilimitis.github.io/assets/img/2018-12-10-project-1.png" width="300"/> |
 
 Todo
-- bdrf experimentation
-- acceleration structure experimentation
+- more bdrf experimentation
+- more acceleration structure experimentation
 
 The above image is a culmination of implementing algorithms to support
 - coordinate space transformations: screen, camera, world, object
@@ -20,4 +20,5 @@ The above image is a culmination of implementing algorithms to support
 - non-adaptive antialiasing
 - polygonal meshes via Möller-Trumbore
 - recursive reflection and refraction
+- bounding volume hierarchy traversal
 - Monte Carlo global illumination
