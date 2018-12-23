@@ -557,19 +557,55 @@ bool TriObj::IntersectTriangle(const Ray &ray, HitInfo &hInfo, int hitSide, unsi
 	return true;
 }
 
-bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
+bool TriObj::TraceBVHNode( const Ray &ray, HitInfo &hInfo, int hitSide, unsigned int nodeID ) const
 {
-	bool intersected = false;
-	for (int i = 0; i < NF(); i++) {
-		HitInfo h;
-		if (IntersectTriangle(ray, h, hitSide, i)) {
-			intersected = true;
-			if (h.z < hInfo.z) {
-				hInfo = h;
+	const float *nb = bvh.GetNodeBounds(nodeID);
+	Box b = Box(nb[0], nb[1], nb[2], nb[3], nb[4], nb[5]);
+	if (b.IntersectRay(ray, BIGFLOAT)) {
+		if (bvh.IsLeafNode(nodeID)) {
+			int c = bvh.GetNodeElementCount(nodeID);
+			if (c == 0) {
+				return false;
+			}
+			bool intersected = false;
+			const unsigned int *e = bvh.GetNodeElements(nodeID);
+			for (int i = 0; i < c; i++) {
+				HitInfo h;
+				if (IntersectTriangle(ray, h, hitSide, e[i])) {
+					intersected = true;
+					if (h.z < hInfo.z) {
+						hInfo = h;
+					}
+				}
+			}
+			return intersected;
+		} else {
+			HitInfo hc1;
+			HitInfo hc2;
+			bool h1 = TraceBVHNode(ray, hc1, hitSide, bvh.GetFirstChildNode(nodeID));
+			bool h2 = TraceBVHNode(ray, hc2, hitSide, bvh.GetSecondChildNode(nodeID));
+			if (h1 && h2) {
+				if (hc1.z < hc2.z) {
+					hInfo = hc1;
+				} else {
+					hInfo = hc2;
+				}
+				return true;
+			} else if (h1) {
+				hInfo = hc1;
+				return true;
+			} else if (h2) {
+				hInfo = hc2;
+				return true;
 			}
 		}
 	}
-	return intersected;
+	return false;
+}
+
+bool TriObj::IntersectRay(const Ray &ray, HitInfo &hInfo, int hitSide) const
+{
+	return TraceBVHNode(ray, hInfo, hitSide, bvh.GetRootNodeID());
 }
 
 bool Box::IntersectRay(const Ray &ray, float t_max) const
@@ -649,7 +685,7 @@ HitInfo cast(Ray ro, Node *n = &rootNode)
   // Renormalize since scaling may denormalize the direction.
   r.Normalize();
 
-  HitInfo h = HitInfo();
+  HitInfo h;
   Object *o = n->GetNodeObj();
   if (o) {
     if (o->GetBoundBox().IntersectRay(r, BIGFLOAT) && o->IntersectRay(r, h)) {
