@@ -125,7 +125,7 @@ void BeginRender()
 {
   std::cout << "begin render" << std::endl;
   
-  int n = 2;
+  int n = 4;
   std::thread threads[n * n];
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
