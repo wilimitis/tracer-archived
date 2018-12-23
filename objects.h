@@ -13,8 +13,8 @@
 #define _OBJECTS_H_INCLUDED_
 
 #include "scene.h"
-#include "cyTriMesh.h"
-#include "cyBVH.h"
+#include "cy/cyTriMesh.h"
+#include "cy/cyBVH.h"
 
 //-------------------------------------------------------------------------------
 

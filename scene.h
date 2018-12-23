@@ -23,15 +23,15 @@
 
 #include "lodepng.h"
 
-#include "cyPoint.h"
+#include "cy/cyPoint.h"
 typedef cyPoint2f Point2;
 typedef cyPoint3f Point3;
 typedef cyPoint4f Point4;
 
-#include "cyMatrix.h"
+#include "cy/cyMatrix.h"
 typedef cyMatrix3f Matrix3;
 
-#include "cyColor.h"
+#include "cy/cyColor.h"
 typedef cyColor Color;
 typedef cyColorA ColorA;
 typedef cyColor24 Color24;
