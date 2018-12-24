@@ -784,7 +784,7 @@ void assertColor(Color &c) {
 
 Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const
 {
-	int bounceMax = 1;
+	int bounceMax = 4;
 	Color color = Color::Black();
 	if (!hInfo.node || bounceCount > bounceMax) {
     return Color::Black();
