@@ -913,7 +913,6 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 		color = color + id * diffuse / S;
 	}
 	
-
 	assertColor(color);
 	return color;
 }
