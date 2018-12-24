@@ -888,27 +888,31 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 	}
 
 	// Path Tracing (diffuse)
-	Color id = Color::Black();
-	int S = 1;
-	for (int i = 0; i < S; i++) {
-		float r1 = distribution(generator);
-		float r2 = distribution(generator);
-		Point3 rd = sample(hInfo.N, r1, r2);
-		
-		float ndrd = hInfo.N % rd;
-		if (ndrd < 0) {
-			// If sample created a slightly bogus value then throw it away.
-			assert(ndrd > -0.1);
-			continue;
-		}
+	bool p = false;
+	if (p) {
+		Color id = Color::Black();
+		int S = 1;
+		for (int i = 0; i < S; i++) {
+			float r1 = distribution(generator);
+			float r2 = distribution(generator);
+			Point3 rd = sample(hInfo.N, r1, r2);
+			
+			float ndrd = hInfo.N % rd;
+			if (ndrd < 0) {
+				// If sample created a slightly bogus value then throw it away.
+				assert(ndrd > -0.1);
+				continue;
+			}
 
-		Ray r = Ray(hInfo.p + rd * e, rd);
-		HitInfo h = cast(r);
-		if (h.node) {
-			id +=  h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
+			Ray r = Ray(hInfo.p + rd * e, rd);
+			HitInfo h = cast(r);
+			if (h.node) {
+				id +=  h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
+			}
 		}
+		color = color + id * diffuse / S;
 	}
-	color = color + id * diffuse / S;
+	
 
 	assertColor(color);
 	return color;
