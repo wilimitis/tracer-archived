@@ -42,6 +42,7 @@ public:
 
 private:
 	TexturedColor diffuse, specular, reflection, refraction;
+	Color emission;
 	float glossiness;
 	Color absorption;
 	float ior;	// index of refraction

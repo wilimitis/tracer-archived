@@ -854,28 +854,28 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
         Point3 h = (l + v).GetNormalized();
         float sa = max(h % hInfo.N, 0);
         float s = powf(sa, glossiness);
-				color += specular * lambertian * s * li;
+				color += specular.GetColor() * lambertian * s * li;
       }
-			color += diffuse * lambertian * li;
+			color += diffuse.GetColor() * lambertian * li;
     } else {
-			color +=  diffuse * li;
+			color +=  diffuse.GetColor() * li;
 		}
 	}
 
 	// Reflection
-	if (reflection != Color::Black()) {
+	if (reflection.GetColor() != Color::Black()) {
 		// Shirley 10.6
 		Point3 r = reflect(ray.dir, hInfo.N);
 		Ray rn = Ray(hInfo.p + e * r, r);
 		HitInfo hn = cast(rn);
 		if (hn.node) {
 			// c *= (Color::White() - reflection);?
-			color += reflection * specular * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
+			color += reflection.GetColor() * specular.GetColor() * hn.node->GetMaterial()->Shade(rn, hn, lights, bounceCount + 1);
 		}
 	}
 
 	// Refraction
-	if (refraction != Color::Black()) {
+	if (refraction.GetColor() != Color::Black()) {
 		// Shirley 10.7
 		// Split the recursion path for dielectrics.
 		Point3 t;
@@ -925,7 +925,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 			float Ro = ((n - 1) * (n - 1)) / ((n + 1) * (n + 1));
 			R = Ro + (1 - Ro) * powf(1 - c, 5);
 		}
-		color += refraction * k * (R * cReflect + (1 - R) * cRefract);
+		color += refraction.GetColor() * k * (R * cReflect + (1 - R) * cRefract);
 	}
 
 	if (bounceCount + 1 > bounceMax) {
@@ -955,7 +955,7 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
 				id +=  h.node->GetMaterial()->Shade(r, h, lights, bounceCount + 1);
 			}
 		}
-		color = color + id * diffuse / S;
+		color = color + id * diffuse.GetColor() / S;
 	}
 	
 	assertColor(color);

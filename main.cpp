@@ -17,6 +17,9 @@ ObjectList objects;
 ObjFileList objList;
 Node rootNode;
 RenderImage renderImage;
+TexturedColor background;
+TexturedColor environment;
+TextureList textureList;
 
 float dtor(float d) {
   float pi = 3.141592653589793238462643383279502884197169;

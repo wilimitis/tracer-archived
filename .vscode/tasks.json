@@ -15,6 +15,7 @@
         "-framework", "OpenGL",
         // TODO: Make into lib?
         "lodepng.cpp",
+        "texture.cpp",
         "tinyxml/tinystr.cpp", "tinyxml/tinyxml.cpp", "tinyxml/tinyxmlerror.cpp", "tinyxml/tinyxmlparser.cpp",
         "main.cpp"
       ],
