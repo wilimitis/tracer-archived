@@ -790,6 +790,9 @@ Color MtlBlinn::Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lig
     return Color::Black();
   }
 
+	// Emission
+	color += emission;
+
 	float e = 0.001;
 
 	// Lights

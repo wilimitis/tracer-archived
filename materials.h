@@ -20,7 +20,7 @@ class MtlBlinn : public Material
 {
 public:
 	MtlBlinn() : diffuse(0.5f,0.5f,0.5f), specular(0.7f,0.7f,0.7f), glossiness(20.0f), 
-				 reflection(0,0,0), refraction(0,0,0), absorption(0,0,0), ior(1) {}
+				 reflection(0,0,0), refraction(0,0,0), absorption(0,0,0), ior(1), emission(0,0,0) {}
 	virtual Color Shade(const Ray &ray, const HitInfo &hInfo, const LightList &lights, int bounceCount) const;
 
 	void SetDiffuse(Color dif) { diffuse = dif; }
@@ -31,11 +31,12 @@ public:
 	void SetRefraction(Color refract) { refraction = refract; }
 	void SetAbsorption(Color absorp ) { absorption = absorp; }
 	void SetRefractionIndex(float _ior) { ior = _ior; }
+	void SetEmission(Color e ) { emission = e; }
 
 	virtual void SetViewportMaterial(int subMtlID=0) const;	// used for OpenGL display
 
 private:
-	Color diffuse, specular, reflection, refraction;
+	Color diffuse, specular, reflection, refraction, emission;
 	float glossiness;
 	Color absorption;
 	float ior;	// index of refraction

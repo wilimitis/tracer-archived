@@ -276,6 +276,10 @@ void LoadMaterial(TiXmlElement *element)
 					ReadFloat( child, f );
 					m->SetGlossiness(f);
 					printf("   glossiness %f\n",f);
+				} else if ( COMPARE( child->Value(), "emission" ) ) {
+					ReadColor( child, c );
+					m->SetEmission(c);
+					printf("   emission %f %f %f\n",c.r,c.g,c.b);
 				} else if ( COMPARE( child->Value(), "reflection" ) ) {
 					ReadColor( child, c );
 					m->SetReflection(c);
