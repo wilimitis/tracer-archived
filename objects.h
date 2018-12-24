@@ -2,8 +2,8 @@
 ///
 /// \file       objects.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    6.0
-/// \date       September 30, 2015
+/// \version    7.0
+/// \date       October 6, 2015
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -53,10 +53,10 @@ public:
 	virtual Box GetBoundBox() const { return Box(GetBoundMin(),GetBoundMax()); }
 	virtual void ViewportDisplay(const Material *mtl) const;
 
-	bool Load(const char *filename)
+	bool Load(const char *filename, bool loadMtl)
 	{
 		bvh.Clear();
-		if ( ! LoadFromFileObj( filename ) ) return false;
+		if ( ! LoadFromFileObj( filename, loadMtl ) ) return false;
 		if ( ! HasNormals() ) ComputeNormals();
 		ComputeBoundingBox();
 		bvh.SetMesh(this,4);

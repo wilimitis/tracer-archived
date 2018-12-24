@@ -2,8 +2,8 @@
 ///
 /// \file       scene.h 
 /// \author     Cem Yuksel (www.cemyuksel.com)
-/// \version    5.0
-/// \date       September 18, 2017
+/// \version    7.1
+/// \date       October 16, 2017
 ///
 /// \brief Example source for CS 6620 - University of Utah.
 ///
@@ -11,6 +11,10 @@
 
 #ifndef _SCENE_H_INCLUDED_
 #define _SCENE_H_INCLUDED_
+
+//-------------------------------------------------------------------------------
+
+#define TEXTURE_SAMPLE_COUNT 32
 
 //-------------------------------------------------------------------------------
 
@@ -135,11 +139,14 @@ struct HitInfo
 	float z;			// the distance from the ray center to the hit point
 	Point3 p;			// position of the hit point
 	Point3 N;			// surface normal at the hit point
+	Point3 uvw;			// texture coordinate at the hit point
+	Point3 duvw[2];		// derivatives of the texture coordinate
 	const Node *node;	// the object node that was hit
 	bool front;			// true if the ray hits the front side, false if the ray hits the back side
+	int mtlID;			// sub-material index
 
 	HitInfo() { Init(); }
-	void Init() { z=BIGFLOAT; node=NULL; front=true; }
+	void Init() { z=BIGFLOAT; node=NULL; front=true; uvw.Set(0.5f,0.5f,0.5f); duvw[0].Zero(); duvw[1].Zero(); mtlID=0; }
 };
 
 //-------------------------------------------------------------------------------
@@ -287,6 +294,122 @@ class MaterialList : public ItemList<Material>
 {
 public:
 	Material* Find( const char *name ) { int n=size(); for ( int i=0; i<n; i++ ) if ( at(i) && strcmp(name,at(i)->GetName())==0 ) return at(i); return NULL; }
+};
+
+//-------------------------------------------------------------------------------
+
+class Texture : public ItemBase
+{
+public:
+	// Evaluates the color at the given uvw location.
+	virtual Color Sample(const Point3 &uvw) const=0;
+
+	// Evaluates the color around the given uvw location using the derivatives duvw
+	// by calling the Sample function multiple times.
+	virtual Color Sample(const Point3 &uvw, const Point3 duvw[2], bool elliptic=true) const
+	{
+		Color c = Sample(uvw);
+		if ( duvw[0].LengthSquared() + duvw[1].LengthSquared() == 0 ) return c;
+		for ( int i=1; i<TEXTURE_SAMPLE_COUNT; i++ ) {
+			float x=0, y=0, fx=0.5f, fy=1.0f/3.0f;
+			for ( int ix=i; ix>0; ix/=2 ) { x+=fx*(ix%2); fx/=2; }	// Halton sequence (base 2)
+			for ( int iy=i; iy>0; iy/=3 ) { y+=fy*(iy%3); fy/=3; }	// Halton sequence (base 3)
+			if ( elliptic ) {
+				float r = sqrtf(x)*0.5f;
+				x = r*sinf(y*(float)M_PI*2);
+				y = r*cosf(y*(float)M_PI*2);
+			} else {
+				if ( x > 0.5f ) x-=1;
+				if ( y > 0.5f ) y-=1;
+			}
+			c += Sample( uvw + x*duvw[0] + y*duvw[1] );
+		}
+		return c / float(TEXTURE_SAMPLE_COUNT);
+	}
+
+	virtual bool SetViewportTexture() const { return false; }	// used for OpenGL display
+
+protected:
+
+	// Clamps the uvw values for tiling textures, such that all values fall between 0 and 1.
+	static Point3 TileClamp(const Point3 &uvw)
+	{
+		Point3 u;
+		u.x = uvw.x - (int) uvw.x;
+		u.y = uvw.y - (int) uvw.y;
+		u.z = uvw.z - (int) uvw.z;
+		if ( u.x < 0 ) u.x += 1;
+		if ( u.y < 0 ) u.y += 1;
+		if ( u.z < 0 ) u.z += 1;
+		return u;
+	}
+};
+
+typedef ItemFileList<Texture> TextureList;
+
+//-------------------------------------------------------------------------------
+
+// This class handles textures with texture transformations.
+// The uvw values passed to the Sample methods are transformed
+// using the texture transformation.
+class TextureMap : public Transformation
+{
+public:
+	TextureMap() : texture(NULL) {}
+	TextureMap(Texture *tex) : texture(tex) {}
+	void SetTexture(Texture *tex) { texture = tex; }
+
+	virtual Color Sample(const Point3 &uvw) const { return texture ? texture->Sample(TransformTo(uvw)) : Color(0,0,0); }
+	virtual Color Sample(const Point3 &uvw, const Point3 duvw[2], bool elliptic=true) const
+	{
+		if ( texture == NULL ) return Color(0,0,0);
+		Point3 u = TransformTo(uvw);
+		Point3 d[2];
+		d[0] = TransformTo(duvw[0]+uvw)-u;
+		d[1] = TransformTo(duvw[1]+uvw)-u;
+		return texture->Sample(u,d,elliptic);
+	}
+
+	bool SetViewportTexture() const { if ( texture ) return texture->SetViewportTexture(); return false; }	// used for OpenGL display
+
+private:
+	Texture *texture;
+};
+
+//-------------------------------------------------------------------------------
+
+// This class keeps a TextureMap and a color. This is useful for keeping material
+// color parameters that can also be textures. If no texture is specified, it
+// automatically uses the color value. Otherwise, the texture value is multiplied
+// by the color value.
+class TexturedColor
+{
+private:
+	Color color;
+	TextureMap *map;
+public:
+	TexturedColor() : color(0,0,0), map(NULL) {}
+	TexturedColor(float r, float g, float b) : color(r,g,b), map(NULL) {}
+	virtual ~TexturedColor() { if ( map ) delete map; }
+
+	void SetColor(const Color &c) { color=c; }
+	void SetTexture(TextureMap *m) { if ( map ) delete map; map=m; }
+
+	Color GetColor() const { return color; }
+	const TextureMap* GetTexture() const { return map; }
+
+	Color Sample(const Point3 &uvw) const { return ( map ) ? color*map->Sample(uvw) : color; }
+	Color Sample(const Point3 &uvw, const Point3 duvw[2], bool elliptic=true) const { return ( map ) ? color*map->Sample(uvw,duvw,elliptic) : color; }
+
+	// Returns the color value at the given direction for environment mapping.
+	Color SampleEnvironment(const Point3 &dir) const
+	{ 
+		float z = asinf(-dir.z)/float(M_PI)+0.5f;
+		float x = dir.x / (fabs(dir.x)+fabs(dir.y));
+		float y = dir.y / (fabs(dir.x)+fabs(dir.y));
+		return Sample( Point3(0.5f,0.5f,0.0f) + z*(x*Point3(0.5f,0.5f,0) + y*Point3(-0.5f,0.5f,0)) );
+	}
+
 };
 
 //-------------------------------------------------------------------------------
